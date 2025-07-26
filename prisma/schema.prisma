@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdTickets Ticket[] @relation("TicketCreator")
+  claimedTickets Ticket[] @relation("TicketAgent")
+  messages       Message[]
+  reviews        Review[]
+  settings       Settings?
+
+  @@map("users")
+}
+
+model Settings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agentName             String   @default("Support Agent")
+  welcomeMessage        String   @default("Thank you for contacting support. How can we help you today?")
+  autoMessage           String   @default("We've received your ticket and will respond shortly.")
+  reminderMessage       String   @default("Hi! Just checking in on your support ticket. Do you need any additional help?")
+  reminderEnabled       Boolean  @default(true)
+  reminderHours         Int      @default(12)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#3B82F6")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tickets Ticket[]
+
+  @@map("categories")
+}
+
+model Ticket {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  status      TicketStatus @default(OPEN)
+  priority    Priority     @default(MEDIUM)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  claimedAt   DateTime?
+  closedAt    DateTime?
+
+  // Relations
+  creatorId  String
+  creator    User      @relation("TicketCreator", fields: [creatorId], references: [id])
+  agentId    String?
+  agent      User?     @relation("TicketAgent", fields: [agentId], references: [id])
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id])
+  messages   Message[]
+  review     Review?
+
+  @@map("tickets")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int // 1-5 stars
+  feedback  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ticketId String @unique
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@map("reviews")
+}
+
+enum Role {
+  USER
+  CREATOR
+  ADMIN
+}
+
+enum TicketStatus {
+  OPEN
+  CLAIMED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
