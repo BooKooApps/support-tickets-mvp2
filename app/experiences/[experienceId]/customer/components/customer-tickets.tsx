@@ -1,23 +1,24 @@
 import { prisma } from '@/lib/prisma';
-import { getCurrentCustomer } from '@/lib/auth';
+
 import { CustomerTicketCard } from './customer-ticket-card';
+import { verifyUser } from '@/lib/authentication';
 
-export async function CustomerTickets() {
-  const user = getCurrentCustomer();
-
+export async function CustomerTickets({
+  experienceId,
+}: {
+  experienceId: string;
+}) {
+  const { userId } = await verifyUser(experienceId);
   const tickets = await prisma.ticket.findMany({
     where: {
-      creatorId: user.id,
+      experienceId: experienceId,
+      creatorId: userId,
     },
     include: {
       category: true,
-      agent: true,
       messages: {
         orderBy: { createdAt: 'desc' },
         take: 1,
-        include: {
-          sender: true,
-        },
       },
       _count: {
         select: { messages: true },

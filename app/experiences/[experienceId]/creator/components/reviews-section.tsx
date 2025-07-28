@@ -8,9 +8,6 @@ import { formatDate } from '@/lib/utils';
 export async function ReviewsSection() {
   const reviews = await prisma.review.findMany({
     include: {
-      user: {
-        select: { name: true },
-      },
       ticket: {
         select: { title: true, category: true },
       },
@@ -76,12 +73,12 @@ export async function ReviewsSection() {
                     <div className='flex items-center gap-2'>
                       <Avatar className='h-8 w-8'>
                         <AvatarFallback className='text-sm'>
-                          {review.user.name.charAt(0)}
+                          {review.userId.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <div className='font-medium text-sm'>
-                          {review.user.name}
+                          Customer {review.userId.slice(-4)}
                         </div>
                         <div className='flex items-center gap-1'>
                           {[...Array(5)].map((_, i) => (

@@ -18,10 +18,6 @@ export const verifyUser = cache(
 
     const { userId } = await verifyUserToken(headersList);
 
-    const response = await whopSdk.experiences.getExperience({
-      experienceId,
-    });
-
     const { username } = await whopSdk.users.getUser({
       userId,
     });

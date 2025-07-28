@@ -9,15 +9,21 @@ export async function GET(
   try {
     const messages = await prisma.message.findMany({
       where: { ticketId: params.id },
-      include: {
-        sender: {
-          select: { id: true, name: true, role: true },
-        },
-      },
       orderBy: { createdAt: 'asc' },
     });
 
-    return NextResponse.json(messages);
+    // Transform messages to include sender info (mock data for demo)
+    const messagesWithSender = messages.map(message => ({
+      ...message,
+      sender: {
+        id: message.senderId,
+        name:
+          message.senderId === 'creator-1' ? 'John Creator' : 'Jane Customer',
+        role: message.senderId === 'creator-1' ? 'CREATOR' : 'USER',
+      },
+    }));
+
+    return NextResponse.json(messagesWithSender);
   } catch (error) {
     console.error('Error fetching messages:', error);
     return NextResponse.json(
@@ -41,14 +47,20 @@ export async function POST(
         ticketId: params.id,
         senderId: user.id,
       },
-      include: {
-        sender: {
-          select: { id: true, name: true, role: true },
-        },
-      },
     });
 
-    return NextResponse.json(message);
+    // Transform message to include sender info (mock data for demo)
+    const messageWithSender = {
+      ...message,
+      sender: {
+        id: message.senderId,
+        name:
+          message.senderId === 'creator-1' ? 'John Creator' : 'Jane Customer',
+        role: message.senderId === 'creator-1' ? 'CREATOR' : 'USER',
+      },
+    };
+
+    return NextResponse.json(messageWithSender);
   } catch (error) {
     console.error('Error creating message:', error);
     return NextResponse.json(

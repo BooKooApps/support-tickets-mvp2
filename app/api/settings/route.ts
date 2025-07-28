@@ -2,18 +2,32 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = getCurrentUser();
+    const experienceId = request.nextUrl.searchParams.get('experienceId');
+
+    if (!experienceId) {
+      return NextResponse.json(
+        { error: 'Experience ID is required' },
+        { status: 400 }
+      );
+    }
 
     let settings = await prisma.settings.findUnique({
-      where: { userId: user.id },
+      where: {
+        experienceId_userId: {
+          experienceId,
+          userId: user.id,
+        },
+      },
     });
 
     if (!settings) {
       // Create default settings
       settings = await prisma.settings.create({
         data: {
+          experienceId,
           userId: user.id,
           agentName: 'Support Team',
           welcomeMessage: 'Welcome to our support! How can we help you today?',
@@ -40,10 +54,23 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const user = getCurrentUser();
+    const experienceId = request.nextUrl.searchParams.get('experienceId');
     const data = await request.json();
 
+    if (!experienceId) {
+      return NextResponse.json(
+        { error: 'Experience ID is required' },
+        { status: 400 }
+      );
+    }
+
     const settings = await prisma.settings.upsert({
-      where: { userId: user.id },
+      where: {
+        experienceId_userId: {
+          experienceId,
+          userId: user.id,
+        },
+      },
       update: {
         agentName: data.agentName,
         welcomeMessage: data.welcomeMessage,
@@ -53,6 +80,7 @@ export async function PUT(request: NextRequest) {
         reminderHours: data.reminderHours,
       },
       create: {
+        experienceId,
         userId: user.id,
         agentName: data.agentName,
         welcomeMessage: data.welcomeMessage,

@@ -1,36 +1,20 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentCustomer } from '@/lib/auth';
+import { verifyUser } from '@/lib/authentication';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = getCurrentCustomer();
     const { title, description, categoryId } = await request.json();
-
-    // Check if user already has an open ticket
-    const existingTicket = await prisma.ticket.findFirst({
-      where: {
-        creatorId: user.id,
-        status: { in: ['OPEN', 'CLAIMED'] },
-      },
-    });
-
-    if (existingTicket) {
-      return NextResponse.json(
-        {
-          error:
-            'You already have an open ticket. Please close it before creating a new one.',
-        },
-        { status: 400 }
-      );
-    }
+    const experienceId = request.nextUrl.searchParams.get('experienceId') || '';
+    const { userId } = await verifyUser(experienceId);
 
     const ticket = await prisma.ticket.create({
       data: {
         title,
         description,
-        creatorId: user.id,
+        creatorId: userId,
         categoryId,
+        experienceId,
       },
     });
 
@@ -39,7 +23,7 @@ export async function POST(request: NextRequest) {
       data: {
         content: description,
         ticketId: ticket.id,
-        senderId: user.id,
+        senderId: userId,
       },
     });
 

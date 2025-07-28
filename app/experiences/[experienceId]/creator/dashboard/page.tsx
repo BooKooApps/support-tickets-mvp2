@@ -3,7 +3,13 @@ import { DashboardStats } from '@/app/experiences/[experienceId]/creator/compone
 import { ReviewsSection } from '@/app/experiences/[experienceId]/creator/components/reviews-section';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function CreatorDashboardPage() {
+export default function CreatorDashboardPage({
+  params,
+}: {
+  params: { experienceId: string };
+}) {
+  const { experienceId } = params;
+
   return (
     <div className='space-y-8'>
       <div>
@@ -14,7 +20,7 @@ export default function CreatorDashboardPage() {
       </div>
 
       <Suspense fallback={<DashboardStatsSkeleton />}>
-        <DashboardStats />
+        <DashboardStats experienceId={experienceId} />
       </Suspense>
 
       <Suspense fallback={<ReviewsSectionSkeleton />}>

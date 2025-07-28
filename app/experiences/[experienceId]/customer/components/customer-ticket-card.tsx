@@ -8,9 +8,25 @@ import { getTimeAgo } from '@/lib/utils';
 import { MessageCircle, Clock } from 'lucide-react';
 import { TicketChat } from '@/app/experiences/[experienceId]/creator/components/ticket-chat';
 import { ReviewDialog } from './review-dialog';
+import { Ticket, Category } from '@prisma/client';
+
+type TicketWithRelations = Ticket & {
+  category: Category;
+  messages: Array<{
+    id: string;
+    content: string;
+    createdAt: Date;
+    updatedAt: Date;
+    ticketId: string;
+    senderId: string;
+  }>;
+  _count: {
+    messages: number;
+  };
+};
 
 interface CustomerTicketCardProps {
-  ticket: any;
+  ticket: TicketWithRelations;
 }
 
 export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
@@ -67,9 +83,9 @@ export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
                   <MessageCircle className='h-4 w-4' />
                   {ticket._count.messages} messages
                 </div>
-                {ticket.agent && (
+                {ticket.agentId && (
                   <div className='text-green-600'>
-                    Assigned to {ticket.agent.name}
+                    Assigned to Support Agent
                   </div>
                 )}
               </div>
@@ -86,13 +102,13 @@ export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
                   Close Ticket
                 </Button>
               )}
-              <Button
+              {/* <Button
                 size='sm'
                 variant='ghost'
                 onClick={() => setIsExpanded(!isExpanded)}
               >
                 {isExpanded ? 'Collapse' : 'View Chat'}
-              </Button>
+              </Button> */}
             </div>
           </div>
         </CardHeader>

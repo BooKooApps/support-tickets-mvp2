@@ -3,8 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Ticket, Clock, MessageCircle, Star } from 'lucide-react';
 
-export async function DashboardStats() {
-  // Fetch statistics
+export async function DashboardStats({
+  experienceId,
+}: {
+  experienceId: string;
+}) {
+  // Fetch statistics, all filtered by experienceId
   const [
     openTicketsCount,
     totalTickets,
@@ -13,12 +17,16 @@ export async function DashboardStats() {
     categoryStats,
     recentActivity,
   ] = await Promise.all([
-    prisma.ticket.count({ where: { status: { in: ['OPEN', 'CLAIMED'] } } }),
-    prisma.ticket.count(),
-    getAverageResponseTime(),
-    getAverageRating(),
-    getCategoryStats(),
-    getRecentActivity(),
+    prisma.ticket.count({
+      where: { status: { in: ['OPEN', 'CLAIMED'] }, experienceId },
+    }),
+    prisma.ticket.count({
+      where: { experienceId },
+    }),
+    getAverageResponseTime(experienceId),
+    getAverageRating(experienceId),
+    getCategoryStats(experienceId),
+    getRecentActivity(experienceId),
   ]);
 
   return (
@@ -108,7 +116,11 @@ export async function DashboardStats() {
                 <div className='flex items-center gap-2'>
                   <Badge variant='secondary'>{category._count.tickets}</Badge>
                   <span className='text-sm text-muted-foreground'>
-                    {Math.round((category._count.tickets / totalTickets) * 100)}
+                    {totalTickets > 0
+                      ? Math.round(
+                          (category._count.tickets / totalTickets) * 100
+                        )
+                      : 0}
                     %
                   </span>
                 </div>
@@ -121,11 +133,11 @@ export async function DashboardStats() {
   );
 }
 
-async function getAverageResponseTime() {
+async function getAverageResponseTime(experienceId: string) {
   const tickets = await prisma.ticket.findMany({
     where: {
       claimedAt: { not: null },
-      // createdAt: { not: null },
+      experienceId,
     },
     select: {
       createdAt: true,
@@ -151,16 +163,18 @@ async function getAverageResponseTime() {
   }
 }
 
-async function getAverageRating() {
+async function getAverageRating(experienceId: string) {
   const result = await prisma.review.aggregate({
+    where: { experienceId },
     _avg: { rating: true },
   });
 
   return result._avg.rating ? result._avg.rating.toFixed(1) : '0.0';
 }
 
-async function getCategoryStats() {
+async function getCategoryStats(experienceId: string) {
   return await prisma.category.findMany({
+    where: { experienceId },
     include: {
       _count: {
         select: { tickets: true },
@@ -174,19 +188,24 @@ async function getCategoryStats() {
   });
 }
 
-async function getRecentActivity() {
+async function getRecentActivity(experienceId: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Only count messages for tickets in this experience
   const [messagesCount, newTicketsCount] = await Promise.all([
     prisma.message.count({
       where: {
         createdAt: { gte: today },
+        ticket: {
+          experienceId,
+        },
       },
     }),
     prisma.ticket.count({
       where: {
         createdAt: { gte: today },
+        experienceId,
       },
     }),
   ]);

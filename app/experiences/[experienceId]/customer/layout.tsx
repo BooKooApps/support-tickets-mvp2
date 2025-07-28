@@ -3,8 +3,7 @@
 import type React from 'react';
 
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
-import { Home, User } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useUser } from '@/hooks/use-user';
 
@@ -18,52 +17,29 @@ export default function CustomerLayout({
   const { experienceId } = params;
 
   const { user, loading, error } = useUser(experienceId);
-  return (
-    <div className='min-h-screen  mx-auto'>
-      <div className='flex'>
-        {/* Header */}
-        <aside className='w-64 min-h-screen border-r bg-background'>
-          <div className='p-6 space-y-6'>
-            <div className='space-y-4'>
-              {/* Logo and Brand */}
-              <div className='space-y-4'>
-                <Link
-                  href={`/experiences/${experienceId}`}
-                  className='flex items-center gap-2'
-                >
-                  <Home className='h-5 w-5' />
-                  <span className='font-semibold'>Support Portal</span>
-                </Link>
-                <Badge variant='secondary'>Customer</Badge>
-              </div>
 
-              {/* User Section */}
-              <div className='pt-6 border-t space-y-4'>
-                {loading ? (
-                  <div className='flex items-center gap-2'>
-                    <User className='h-4 w-4' />
-                    <span className='text-sm font-medium'>Loading...</span>
-                  </div>
-                ) : error ? (
-                  <div className='flex items-center gap-2'>
-                    <User className='h-4 w-4' />
-                    <span className='text-sm font-medium text-destructive'>
-                      Error loading user
-                    </span>
-                  </div>
-                ) : user ? (
-                  <div className='flex items-center gap-2'>
-                    <User className='h-4 w-4' />
-                    <span className='text-sm font-medium'>{user.username}</span>
-                  </div>
-                ) : null}
-                <ThemeToggle />
-              </div>
-            </div>
+  return (
+    <div className='min-h-screen mx-auto'>
+      {/* Header */}
+      <header className='bg-background'>
+        <div className='flex items-center justify-between p-4'>
+          {user?.accessLevel === 'admin' && (
+            <Link
+              href={`/experiences/${experienceId}/creator`}
+              className='flex w- items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted'
+            >
+              <Settings className='h-4 w-4' />
+              Admin Dashboard
+            </Link>
+          )}
+          <div className=''>
+            <ThemeToggle />
           </div>
-        </aside>
-        <main className='flex-1 p-8'>{children}</main>
-      </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className='p-8'>{children}</main>
     </div>
   );
 }

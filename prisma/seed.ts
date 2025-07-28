@@ -16,6 +16,7 @@ async function main() {
         name: "Technical Issue",
         description: "Problems with functionality or bugs",
         color: "#EF4444",
+        experienceId: "exp_1crh8cW7UPLwlU",
       },
     }),
     prisma.category.upsert({
@@ -26,6 +27,7 @@ async function main() {
         name: "Account Support",
         description: "Account-related questions and issues",
         color: "#3B82F6",
+        experienceId: "exp_1crh8cW7UPLwlU",
       },
     }),
     prisma.category.upsert({
@@ -36,6 +38,7 @@ async function main() {
         name: "Billing",
         description: "Payment and subscription inquiries",
         color: "#10B981",
+        experienceId: "exp_1crh8cW7UPLwlU",
       },
     }),
     prisma.category.upsert({
@@ -46,6 +49,7 @@ async function main() {
         name: "Feature Request",
         description: "Suggestions for new features",
         color: "#8B5CF6",
+        experienceId: "exp_1crh8cW7UPLwlU",
       },
     }),
     prisma.category.upsert({
@@ -56,56 +60,26 @@ async function main() {
         name: "General Question",
         description: "General inquiries and questions",
         color: "#6B7280",
+        experienceId: "exp_1crh8cW7UPLwlU",
       },
     }),
   ])
 
   console.log(`✅ Created ${categories.length} categories`)
 
-  // Create users
-  console.log("👥 Creating users...")
-  const creator = await prisma.user.upsert({
-    where: { id: "creator-1" },
-    update: {},
-    create: {
-      id: "creator-1",
-      email: "creator@example.com",
-      name: "John Creator",
-      role: "CREATOR",
-    },
-  })
-
-  const customer1 = await prisma.user.upsert({
-    where: { id: "user-1" },
-    update: {},
-    create: {
-      id: "user-1",
-      email: "customer@example.com",
-      name: "Jane Customer",
-      role: "USER",
-    },
-  })
-
-  const customer2 = await prisma.user.upsert({
-    where: { id: "user-2" },
-    update: {},
-    create: {
-      id: "user-2",
-      email: "customer2@example.com",
-      name: "Bob Customer",
-      role: "USER",
-    },
-  })
-
-  console.log("✅ Created users")
-
-  // Create settings for creator
+  // Create settings for creator (using external user IDs from Whop)
   console.log("⚙️ Creating settings...")
   await prisma.settings.upsert({
-    where: { userId: "creator-1" },
+    where: { 
+      experienceId_userId: {
+        experienceId: "exp_1crh8cW7UPLwlU",
+        userId: "whop-user-creator-1"
+      }
+    },
     update: {},
     create: {
-      userId: "creator-1",
+      experienceId: "exp_1crh8cW7UPLwlU",
+      userId: "whop-user-creator-1",
       agentName: "Support Team",
       welcomeMessage: "Welcome to our support! How can we help you today?",
       autoMessage: "Thank you for your message. We'll get back to you shortly.",
@@ -117,18 +91,19 @@ async function main() {
 
   console.log("✅ Created settings")
 
-  // Create sample tickets
+  // Create sample tickets (using external user IDs from Whop)
   console.log("🎫 Creating tickets...")
   const ticket1 = await prisma.ticket.upsert({
     where: { id: "ticket-1" },
     update: {},
-    create: {
-      id: "ticket-1",
-      title: "Login Issues",
+          create: {
+        id: "ticket-1",
+        experienceId: "exp_1crh8cW7UPLwlU",
+        title: "Login Issues",
       description: "I cannot log into my account",
       status: "OPEN",
       priority: "HIGH",
-      creatorId: "user-1",
+      creatorId: "whop-user-customer-1",
       categoryId: "cat-2",
       createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
     },
@@ -137,15 +112,16 @@ async function main() {
   const ticket2 = await prisma.ticket.upsert({
     where: { id: "ticket-2" },
     update: {},
-    create: {
-      id: "ticket-2",
-      title: "Payment Failed",
+          create: {
+        id: "ticket-2",
+        experienceId: "exp_1crh8cW7UPLwlU",
+        title: "Payment Failed",
       description: "My payment was declined but I was charged",
       status: "CLAIMED",
       priority: "URGENT",
-      creatorId: "user-2",
+      creatorId: "whop-user-customer-2",
       categoryId: "cat-3",
-      agentId: "creator-1",
+      agentId: "whop-user-creator-1",
       createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
       claimedAt: new Date(Date.now() - 23 * 60 * 60 * 1000), // 23 hours ago
     },
@@ -154,15 +130,16 @@ async function main() {
   const ticket3 = await prisma.ticket.upsert({
     where: { id: "ticket-3" },
     update: {},
-    create: {
-      id: "ticket-3",
-      title: "Feature Request",
+          create: {
+        id: "ticket-3",
+        experienceId: "exp_1crh8cW7UPLwlU",
+        title: "Feature Request",
       description: "Can you add dark mode?",
       status: "CLOSED",
       priority: "LOW",
-      creatorId: "user-1",
+      creatorId: "whop-user-customer-1",
       categoryId: "cat-4",
-      agentId: "creator-1",
+      agentId: "whop-user-creator-1",
       createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
       claimedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
       closedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
@@ -171,7 +148,7 @@ async function main() {
 
   console.log("✅ Created tickets")
 
-  // Create sample messages
+  // Create sample messages (using external user IDs from Whop)
   console.log("💬 Creating messages...")
   await Promise.all([
     prisma.message.upsert({
@@ -181,7 +158,7 @@ async function main() {
         id: "msg-1",
         content: "I cannot log into my account. I keep getting an error message.",
         ticketId: "ticket-1",
-        senderId: "user-1",
+        senderId: "whop-user-customer-1",
         createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
       },
     }),
@@ -192,7 +169,7 @@ async function main() {
         id: "msg-2",
         content: "My payment was declined but I was charged on my credit card.",
         ticketId: "ticket-2",
-        senderId: "user-2",
+        senderId: "whop-user-customer-2",
         createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
       },
     }),
@@ -203,7 +180,7 @@ async function main() {
         id: "msg-3",
         content: "I'll look into this right away. Can you provide your transaction ID?",
         ticketId: "ticket-2",
-        senderId: "creator-1",
+        senderId: "whop-user-creator-1",
         createdAt: new Date(Date.now() - 23 * 60 * 60 * 1000),
       },
     }),
@@ -214,7 +191,7 @@ async function main() {
         id: "msg-4",
         content: "Can you add dark mode? It would be really helpful for night usage.",
         ticketId: "ticket-3",
-        senderId: "user-1",
+        senderId: "whop-user-customer-1",
         createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
       },
     }),
@@ -225,7 +202,7 @@ async function main() {
         id: "msg-5",
         content: "Great suggestion! We'll add this to our roadmap and implement it soon.",
         ticketId: "ticket-3",
-        senderId: "creator-1",
+        senderId: "whop-user-creator-1",
         createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       },
     }),
@@ -236,7 +213,7 @@ async function main() {
         id: "msg-6",
         content: "Perfect! Dark mode has been implemented. You can find the toggle in the header.",
         ticketId: "ticket-3",
-        senderId: "creator-1",
+        senderId: "whop-user-creator-1",
         createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
       },
     }),
@@ -244,7 +221,7 @@ async function main() {
 
   console.log("✅ Created messages")
 
-  // Create sample review
+  // Create sample review (using external user IDs from Whop)
   console.log("⭐ Creating reviews...")
   await prisma.review.upsert({
     where: { ticketId: "ticket-3" },
@@ -253,7 +230,8 @@ async function main() {
       rating: 5,
       feedback: "Great support! Very helpful and quick response. The dark mode looks amazing!",
       ticketId: "ticket-3",
-      userId: "user-1",
+      userId: "whop-user-customer-1",
+      experienceId: "exp_1crh8cW7UPLwlU",
       createdAt: new Date(Date.now() - 23 * 60 * 60 * 1000),
     },
   })

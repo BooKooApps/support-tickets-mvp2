@@ -20,7 +20,7 @@ export default async function CreatorTicketsPage({
       </div>
 
       <Suspense fallback={<TicketsListSkeleton />}>
-        <TicketsList />
+        <TicketsList experienceId={experienceId} />
       </Suspense>
     </div>
   );

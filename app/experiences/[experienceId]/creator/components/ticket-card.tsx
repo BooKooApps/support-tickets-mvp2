@@ -8,9 +8,25 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getTimeAgo } from '@/lib/utils';
 import { MessageCircle, Clock, User } from 'lucide-react';
 import { TicketChat } from './ticket-chat';
+import { Ticket, Category } from '@prisma/client';
+
+type TicketWithRelations = Ticket & {
+  category: Category;
+  messages: Array<{
+    id: string;
+    content: string;
+    createdAt: Date;
+    updatedAt: Date;
+    ticketId: string;
+    senderId: string;
+  }>;
+  _count: {
+    messages: number;
+  };
+};
 
 interface TicketCardProps {
-  ticket: any; // In production, create proper TypeScript types
+  ticket: TicketWithRelations;
 }
 
 export function TicketCard({ ticket }: TicketCardProps) {
@@ -23,6 +39,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
       const response = await fetch(`/api/tickets/${ticket.id}/claim`, {
         method: 'POST',
       });
+
       if (response.ok) {
         window.location.reload(); // In production, use proper state management
       }
@@ -82,7 +99,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
             <div className='flex items-center gap-4 text-sm text-gray-500'>
               <div className='flex items-center gap-1'>
                 <User className='h-4 w-4' />
-                {ticket.creator.name}
+                {ticket.creatorId}
               </div>
               <div className='flex items-center gap-1'>
                 <Clock className='h-4 w-4' />
@@ -111,13 +128,13 @@ export function TicketCard({ ticket }: TicketCardProps) {
                 Close Ticket
               </Button>
             )}
-            <Button
+            {/* <Button
               size='sm'
               variant='ghost'
               onClick={() => setIsExpanded(!isExpanded)}
             >
               {isExpanded ? 'Collapse' : 'View Chat'}
-            </Button>
+            </Button> */}
           </div>
         </div>
       </CardHeader>
@@ -138,27 +155,6 @@ export function TicketCard({ ticket }: TicketCardProps) {
             </div>
             <p className='text-gray-600'>{ticket.description}</p>
           </div>
-
-          {ticket.messages.length > 0 && (
-            <div className='border-t pt-4'>
-              <div className='flex items-center gap-2 mb-2'>
-                <Avatar className='h-6 w-6'>
-                  <AvatarFallback className='text-xs'>
-                    {ticket.messages[0].sender.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className='text-sm font-medium'>
-                  {ticket.messages[0].sender.name}
-                </span>
-                <span className='text-xs text-gray-500'>
-                  {getTimeAgo(new Date(ticket.messages[0].createdAt))}
-                </span>
-              </div>
-              <p className='text-sm text-gray-600 line-clamp-2'>
-                {ticket.messages[0].content}
-              </p>
-            </div>
-          )}
 
           {isExpanded && (
             <div className='border-t pt-4'>

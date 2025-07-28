@@ -10,37 +10,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  createdTickets Ticket[] @relation("TicketCreator")
-  claimedTickets Ticket[] @relation("TicketAgent")
-  messages       Message[]
-  reviews        Review[]
-  settings       Settings?
-
-  @@map("users")
-}
-
 model Settings {
-  id                    String   @id @default(cuid())
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agentName             String   @default("Support Agent")
-  welcomeMessage        String   @default("Thank you for contacting support. How can we help you today?")
-  autoMessage           String   @default("We've received your ticket and will respond shortly.")
-  reminderMessage       String   @default("Hi! Just checking in on your support ticket. Do you need any additional help?")
-  reminderEnabled       Boolean  @default(true)
-  reminderHours         Int      @default(12)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id              String   @id @default(cuid())
+  experienceId    String // Whop experience/community ID
+  userId          String // External user ID from Whop
+  agentName       String   @default("Support Agent")
+  welcomeMessage  String   @default("Thank you for contacting support. How can we help you today?")
+  autoMessage     String   @default("We've received your ticket and will respond shortly.")
+  reminderMessage String   @default("Hi! Just checking in on your support ticket. Do you need any additional help?")
+  reminderEnabled Boolean  @default(true)
+  reminderHours   Int      @default(12)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  @@unique([experienceId, userId])
   @@map("settings")
 }
 
@@ -51,6 +34,7 @@ model Category {
   color       String   @default("#3B82F6")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  experienceId String // Whop experience/community ID
 
   // Relations
   tickets Ticket[]
@@ -59,21 +43,20 @@ model Category {
 }
 
 model Ticket {
-  id          String       @id @default(cuid())
-  title       String
-  description String
-  status      TicketStatus @default(OPEN)
-  priority    Priority     @default(MEDIUM)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  claimedAt   DateTime?
-  closedAt    DateTime?
+  id           String       @id @default(cuid())
+  experienceId String // Whop experience/community ID
+  title        String
+  description  String
+  status       TicketStatus @default(OPEN)
+  priority     Priority     @default(MEDIUM)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  claimedAt    DateTime?
+  closedAt     DateTime?
 
-  // Relations
-  creatorId  String
-  creator    User      @relation("TicketCreator", fields: [creatorId], references: [id])
-  agentId    String?
-  agent      User?     @relation("TicketAgent", fields: [agentId], references: [id])
+  // Relations - using external user IDs from Whop
+  creatorId  String // External user ID from Whop
+  agentId    String? // External user ID from Whop (admin users)
   categoryId String
   category   Category  @relation(fields: [categoryId], references: [id])
   messages   Message[]
@@ -91,8 +74,7 @@ model Message {
   // Relations
   ticketId String
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  senderId String
-  sender   User   @relation(fields: [senderId], references: [id])
+  senderId String // External user ID from Whop
 
   @@map("messages")
 }
@@ -103,20 +85,14 @@ model Review {
   feedback  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  experienceId String // Whop experience/community ID
 
   // Relations
   ticketId String @unique
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  userId   String
-  user     User   @relation(fields: [userId], references: [id])
+  userId   String // External user ID from Whop
 
   @@map("reviews")
-}
-
-enum Role {
-  USER
-  CREATOR
-  ADMIN
 }
 
 enum TicketStatus {

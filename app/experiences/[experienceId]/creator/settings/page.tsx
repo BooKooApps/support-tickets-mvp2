@@ -3,7 +3,11 @@ import { SettingsForm } from '@/app/experiences/[experienceId]/creator/component
 import { CategoriesManager } from '@/app/experiences/[experienceId]/creator/components/categories-manager';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function CreatorSettingsPage() {
+export default function CreatorSettingsPage({
+  params,
+}: {
+  params: { experienceId: string };
+}) {
   return (
     <div className='space-y-8'>
       <div>
@@ -15,11 +19,11 @@ export default function CreatorSettingsPage() {
 
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
         <Suspense fallback={<SettingsFormSkeleton />}>
-          <SettingsForm />
+          <SettingsForm experienceId={params.experienceId} />
         </Suspense>
 
         <Suspense fallback={<CategoriesManagerSkeleton />}>
-          <CategoriesManager />
+          <CategoriesManager experienceId={params.experienceId} />
         </Suspense>
       </div>
     </div>

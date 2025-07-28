@@ -20,7 +20,7 @@ interface Settings {
   reminderHours: number;
 }
 
-export function SettingsForm() {
+export function SettingsForm({ experienceId }: { experienceId: string }) {
   const [settings, setSettings] = useState<Settings>({
     agentName: '',
     welcomeMessage: '',
@@ -38,7 +38,9 @@ export function SettingsForm() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('/api/settings');
+      const response = await fetch(
+        `/api/settings?experienceId=${experienceId}`
+      );
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
@@ -53,13 +55,16 @@ export function SettingsForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(settings),
-      });
+      const response = await fetch(
+        `/api/settings?experienceId=${experienceId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(settings),
+        }
+      );
 
       if (response.ok) {
         toast({

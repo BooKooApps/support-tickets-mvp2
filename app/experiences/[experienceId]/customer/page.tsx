@@ -1,15 +1,15 @@
 import { Suspense } from 'react';
-import { CustomerTickets } from '@/components/customer/customer-tickets';
-import { CreateTicketButton } from '@/components/customer/create-ticket-button';
+import { CustomerTickets } from '@/app/experiences/[experienceId]/customer/components/customer-tickets';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CreateTicketDialog } from './components/create-ticket-dialog';
 
 export default function CustomerPortalPage({
   params,
 }: {
-  params: Promise<{ experienceId: string }>;
+  params: { experienceId: string };
 }) {
-  // const { experienceId } = await params;
+  const { experienceId } = params;
 
   return (
     <div className='space-y-6'>
@@ -20,11 +20,11 @@ export default function CustomerPortalPage({
             View your support requests and get help from our team
           </p>
         </div>
-        <CreateTicketButton />
+        <CreateTicketDialog experienceId={experienceId} />
       </div>
 
       <Suspense fallback={<CustomerTicketsSkeleton />}>
-        <CustomerTickets />
+        <CustomerTickets experienceId={experienceId} />
       </Suspense>
     </div>
   );

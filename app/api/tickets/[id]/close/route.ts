@@ -1,15 +1,27 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+import { verifyUser } from '@/lib/authentication';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = getCurrentUser();
+    // verify it ticket exists
+    const existingTicket = await prisma.ticket.findFirst({
+      where: {
+        id: params.id,
+        status: 'CLAIMED',
+      },
+    });
 
-    if (user.role !== 'CREATOR') {
+    if (!existingTicket) {
+      return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
+    }
+
+    const { accessLevel } = await verifyUser(existingTicket.experienceId);
+
+    if (accessLevel !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

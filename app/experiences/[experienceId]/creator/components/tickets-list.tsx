@@ -1,23 +1,19 @@
 import { prisma } from '@/lib/prisma';
 import { TicketCard } from './ticket-card';
 
-export async function TicketsList() {
+export async function TicketsList({ experienceId }: { experienceId: string }) {
   const tickets = await prisma.ticket.findMany({
     where: {
+      experienceId: experienceId,
       status: {
         in: ['OPEN', 'CLAIMED'],
       },
     },
     include: {
-      creator: true,
-      agent: true,
       category: true,
       messages: {
         orderBy: { createdAt: 'desc' },
         take: 1,
-        include: {
-          sender: true,
-        },
       },
       _count: {
         select: { messages: true },

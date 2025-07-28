@@ -14,6 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -22,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Plus } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -31,14 +33,10 @@ interface Category {
 }
 
 interface CreateTicketDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  experienceId: string;
 }
 
-export function CreateTicketDialog({
-  open,
-  onOpenChange,
-}: CreateTicketDialogProps) {
+export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -46,14 +44,14 @@ export function CreateTicketDialog({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      fetchCategories();
-    }
-  }, [open]);
+    fetchCategories();
+  }, []);
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/categories');
+      const response = await fetch(
+        `/api/categories?experienceId=${encodeURIComponent(experienceId)}`
+      );
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
@@ -69,24 +67,26 @@ export function CreateTicketDialog({
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/tickets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          categoryId,
-        }),
-      });
+      const response = await fetch(
+        `/api/tickets?experienceId=${encodeURIComponent(experienceId)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            description: description.trim(),
+            categoryId,
+          }),
+        }
+      );
 
       if (response.ok) {
         // Reset form
         setTitle('');
         setDescription('');
         setCategoryId('');
-        onOpenChange(false);
         // Refresh the page to show new ticket
         window.location.reload();
       }
@@ -98,7 +98,13 @@ export function CreateTicketDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className='h-4 w-4 mr-2' />
+          Create Ticket
+        </Button>
+      </DialogTrigger>
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle>Create Support Ticket</DialogTitle>
@@ -158,7 +164,13 @@ export function CreateTicketDialog({
             <Button
               type='button'
               variant='outline'
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                // close the dialog
+                const dialog = document.querySelector('dialog');
+                if (dialog) {
+                  dialog.close();
+                }
+              }}
             >
               Cancel
             </Button>
