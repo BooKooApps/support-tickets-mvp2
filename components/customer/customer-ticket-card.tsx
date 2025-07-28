@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getTimeAgo } from '@/lib/utils';
 import { MessageCircle, Clock } from 'lucide-react';
-import { TicketChat } from '@/components/creator/ticket-chat';
+import { TicketChat } from '@/app/experiences/[experienceId]/creator/components/ticket-chat';
 import { ReviewDialog } from './review-dialog';
 
 interface CustomerTicketCardProps {

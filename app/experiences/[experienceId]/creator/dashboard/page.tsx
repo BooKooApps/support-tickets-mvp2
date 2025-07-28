@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import { DashboardStats } from '@/components/creator/dashboard-stats';
-import { ReviewsSection } from '@/components/creator/reviews-section';
+import { DashboardStats } from '@/app/experiences/[experienceId]/creator/components/dashboard-stats';
+import { ReviewsSection } from '@/app/experiences/[experienceId]/creator/components/reviews-section';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CreatorDashboardPage() {

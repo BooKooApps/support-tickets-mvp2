@@ -1,9 +1,15 @@
 import { Suspense } from 'react';
-import { TicketsList } from '@/components/creator/tickets-list';
+import { TicketsList } from '@/app/experiences/[experienceId]/creator/components/tickets-list';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function CreatorTicketsPage() {
+export default async function CreatorTicketsPage({
+  params,
+}: {
+  params: Promise<{ experienceId: string }>;
+}) {
+  const { experienceId } = await params;
+
   return (
     <div className='space-y-6'>
       <div>

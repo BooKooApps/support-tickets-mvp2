@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import { SettingsForm } from '@/components/creator/settings-form';
-import { CategoriesManager } from '@/components/creator/categories-manager';
+import { SettingsForm } from '@/app/experiences/[experienceId]/creator/components/settings-form';
+import { CategoriesManager } from '@/app/experiences/[experienceId]/creator/components/categories-manager';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CreatorSettingsPage() {

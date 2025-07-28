@@ -10,18 +10,36 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Ticket, BarChart3, Settings, Bell, Home, User } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
-
-const navigation = [
-  { name: 'Open Tickets', href: '/creator', icon: Ticket },
-  { name: 'Dashboard', href: '/creator/dashboard', icon: BarChart3 },
-  { name: 'Settings', href: '/creator/settings', icon: Settings },
-];
+import { useUser } from '@/hooks/use-user';
 
 export default function CreatorLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: { experienceId: string };
 }) {
+  const { experienceId } = params;
+  const navigation = [
+    {
+      name: 'Open Tickets',
+      href: `/experiences/${experienceId}/creator`,
+      icon: Ticket,
+    },
+    {
+      name: 'Dashboard',
+      href: `/experiences/${experienceId}/creator/dashboard`,
+      icon: BarChart3,
+    },
+    {
+      name: 'Settings',
+      href: `/experiences/${experienceId}/creator/settings`,
+      icon: Settings,
+    },
+  ];
+
+  const { user, loading, error } = useUser(experienceId, 'admin');
+
   const pathname = usePathname();
   const [notifications] = useState(3); // Mock notification count
 
@@ -33,7 +51,10 @@ export default function CreatorLayout({
           <div className='p-6 space-y-6'>
             {/* Logo and Brand */}
             <div className='space-y-4'>
-              <Link href='/' className='flex items-center gap-2'>
+              <Link
+                href={`/experiences/${experienceId}`}
+                className='flex items-center gap-2'
+              >
                 <Home className='h-5 w-5' />
                 <span className='font-semibold'>Support Tickets</span>
               </Link>
@@ -64,10 +85,24 @@ export default function CreatorLayout({
 
             {/* User Section */}
             <div className='pt-6 border-t space-y-4'>
-              <div className='flex items-center gap-2'>
-                <User className='h-4 w-4' />
-                <span className='text-sm font-medium'>John Creator</span>
-              </div>
+              {loading ? (
+                <div className='flex items-center gap-2'>
+                  <User className='h-4 w-4' />
+                  <span className='text-sm font-medium'>Loading...</span>
+                </div>
+              ) : error ? (
+                <div className='flex items-center gap-2'>
+                  <User className='h-4 w-4' />
+                  <span className='text-sm font-medium text-destructive'>
+                    Error loading user
+                  </span>
+                </div>
+              ) : user ? (
+                <div className='flex items-center gap-2'>
+                  <User className='h-4 w-4' />
+                  <span className='text-sm font-medium'>{user.username}</span>
+                </div>
+              ) : null}
 
               <Button
                 variant='ghost'
