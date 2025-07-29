@@ -4,14 +4,15 @@ import { verifyUser } from '@/lib/authentication';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
   try {
     // verify it ticket exists
     const existingTicket = await prisma.ticket.findFirst({
       where: {
-        id: params.id,
-        status: 'CLAIMED',
+        id: id,
       },
     });
 
@@ -26,7 +27,7 @@ export async function POST(
     }
 
     const ticket = await prisma.ticket.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         status: 'CLOSED',
         closedAt: new Date(),

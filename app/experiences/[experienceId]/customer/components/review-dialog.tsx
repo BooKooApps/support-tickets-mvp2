@@ -21,6 +21,7 @@ interface ReviewDialogProps {
   onOpenChange: (open: boolean) => void;
   ticketId: string;
   ticketTitle: string;
+  onReviewSubmitted?: () => void;
 }
 
 export function ReviewDialog({
@@ -28,6 +29,7 @@ export function ReviewDialog({
   onOpenChange,
   ticketId,
   ticketTitle,
+  onReviewSubmitted,
 }: ReviewDialogProps) {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState('');
@@ -53,8 +55,8 @@ export function ReviewDialog({
 
       if (response.ok) {
         onOpenChange(false);
-        // Refresh to show updated ticket status
-        window.location.reload();
+        // Call the callback if provided
+        onReviewSubmitted?.();
       }
     } catch (error) {
       console.error('Failed to submit review:', error);

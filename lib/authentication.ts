@@ -14,7 +14,7 @@ export const verifyUser = cache(
     username: string;
     accessLevel: 'admin' | 'customer';
   }> => {
-    const headersList = headers();
+    const headersList = await headers();
 
     const { userId } = await verifyUserToken(headersList);
 

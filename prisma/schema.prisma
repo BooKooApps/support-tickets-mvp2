@@ -6,9 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
 }
 
 model Settings {
@@ -29,12 +29,12 @@ model Settings {
 }
 
 model Category {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  color       String   @default("#3B82F6")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  color        String   @default("#3B82F6")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   experienceId String // Whop experience/community ID
 
   // Relations
@@ -44,19 +44,22 @@ model Category {
 }
 
 model Ticket {
-  id           String       @id @default(cuid())
-  experienceId String // Whop experience/community ID
-  title        String
-  description  String
-  status       TicketStatus @default(OPEN)
-  priority     Priority     @default(MEDIUM)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  claimedAt    DateTime?
-  closedAt     DateTime?
+  id                String       @id @default(cuid())
+  experienceId      String // Whop experience/community ID
+  title             String
+  description       String
+  status            TicketStatus @default(OPEN)
+  priority          Priority     @default(MEDIUM)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  claimedById       String?
+  claimedByUsername String?
+  claimedAt         DateTime?
+  closedAt          DateTime?
 
   // Relations - using external user IDs from Whop
-  creatorId  String // External user ID from Whop
+  creatorId  String     // External user ID from Whop
+  username   String
   agentId    String? // External user ID from Whop (admin users)
   categoryId String
   category   Category  @relation(fields: [categoryId], references: [id])
@@ -76,21 +79,23 @@ model Message {
   ticketId String
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   senderId String // External user ID from Whop
+  username String // External user name from Whop
 
   @@map("messages")
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  rating    Int // 1-5 stars
-  feedback  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  rating       Int // 1-5 stars
+  feedback     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   experienceId String // Whop experience/community ID
 
   // Relations
   ticketId String @unique
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  username String // External user name from Whop
   userId   String // External user ID from Whop
 
   @@map("reviews")

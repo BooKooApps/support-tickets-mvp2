@@ -16,6 +16,7 @@ import {
   Home,
   User,
   Users,
+  ArrowLeft,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useUser } from '@/hooks/use-user';
@@ -52,70 +53,53 @@ export default function CreatorLayout({
   const [notifications] = useState(3); // Mock notification count
 
   return (
-    <div className='min-h-screen  mx-auto'>
-      <div className='flex'>
-        {/* Sidebar */}
-        <aside className='w-64 min-h-screen border-r bg-background'>
-          <div className='p-6 space-y-6'>
-            {/* Logo and Brand */}
-            <div className='space-y-4'></div>
+    <div className='min-h-screen mx-auto flex flex-col'>
+      {/* Header */}
+      <header className='w-full bg-background px-6 py-2 flex items-center justify-between'>
+        {/* Left: Customer View link */}
+        <div className='flex items-center gap-4'>
+          <Link
+            href={`/experiences/${experienceId}/customer`}
+            className='flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted'
+          >
+            <ArrowLeft className='h-4 w-4' />
+            Customer View
+          </Link>
+        </div>
 
-            {/* Navigation */}
-            <nav className='space-y-2'>
-              {/* Return to Customer View */}
+        {/* Middle: Main Navigation */}
+        <nav className='flex items-center gap-2'>
+          {navigation.map(item => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                )}
+              >
+                <item.icon className='h-4 w-4' />
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
 
-              <div className='pt-4 border-b'>
-                <Link
-                  href={`/experiences/${experienceId}/customer`}
-                  className='flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted'
-                >
-                  <Users className='h-4 w-4' />
-                  Customer View
-                </Link>
-              </div>
-              <div className='pb-4 border-b'>
-                <ThemeToggle />
-                <span className='flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted'>
-                  <User className='h-4 w-4' />
-                  {loading ? (
-                    <span className='animate-pulse text-xs text-muted-foreground'>
-                      Loading...
-                    </span>
-                  ) : (
-                    user?.username || (
-                      <span className='text-xs text-muted-foreground'>
-                        Unknown User
-                      </span>
-                    )
-                  )}
-                </span>
-              </div>
-
-              {navigation.map(item => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                    )}
-                  >
-                    <item.icon className='h-4 w-4' />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </nav>
+        {/* Right: Theme toggle and user */}
+        <div className='flex items-center gap-3'>
+          <Badge >Admin View</Badge>
+          <div>
+            <ThemeToggle />
           </div>
-        </aside>
+        </div>
+      </header>
 
-        {/* Main Content */}
-        <main className='flex-1 p-8'>{children}</main>
-      </div>
+      {/* Main Content */}
+      <main className='flex-1 p-8'>{children}</main>
     </div>
   );
 }

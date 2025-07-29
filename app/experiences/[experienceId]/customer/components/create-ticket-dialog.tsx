@@ -87,6 +87,7 @@ export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
         setTitle('');
         setDescription('');
         setCategoryId('');
+        setIsLoading(false);
         // Refresh the page to show new ticket
         window.location.reload();
       }
@@ -108,7 +109,7 @@ export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle>Create Support Ticket</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className='bg-primary/50 text-primary border p-4 rounded-2xl my-4'>
             Describe your issue and we'll help you resolve it as quickly as
             possible.
           </DialogDescription>

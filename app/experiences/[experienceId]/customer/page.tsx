@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreateTicketDialog } from './components/create-ticket-dialog';
 
-export default function CustomerPortalPage({
+export default async function CustomerPortalPage({
   params,
 }: {
-  params: { experienceId: string };
+  params: Promise<{ experienceId: string }>;
 }) {
-  const { experienceId } = params;
+  const { experienceId } = await params;
 
   return (
     <div className='space-y-6'>

@@ -32,7 +32,7 @@ export default function CreatorSettingsPage({
 
 function SettingsFormSkeleton() {
   return (
-    <div className='bg-white p-6 rounded-lg shadow space-y-4'>
+    <div className=' p-6 rounded-lg shadow space-y-4'>
       <Skeleton className='h-6 w-48' />
       <Skeleton className='h-10 w-full' />
       <Skeleton className='h-20 w-full' />
@@ -44,7 +44,7 @@ function SettingsFormSkeleton() {
 
 function CategoriesManagerSkeleton() {
   return (
-    <div className='bg-white p-6 rounded-lg shadow space-y-4'>
+    <div className=' p-6 rounded-lg shadow space-y-4'>
       <Skeleton className='h-6 w-48' />
       {[...Array(3)].map((_, i) => (
         <div
