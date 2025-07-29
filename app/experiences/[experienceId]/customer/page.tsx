@@ -3,6 +3,7 @@ import { CustomerTickets } from '@/app/experiences/[experienceId]/customer/compo
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreateTicketDialog } from './components/create-ticket-dialog';
+import { Ticket } from 'lucide-react';
 
 export default async function CustomerPortalPage({
   params,
@@ -14,11 +15,9 @@ export default async function CustomerPortalPage({
   return (
     <div className='space-y-6'>
       <div className='flex justify-between items-start'>
-        <div>
-          <h1 className='text-3xl font-bold '>Support Tickets</h1>
-          <p className='text-muted-foreground mt-2'>
-            View your support requests and get help from our team
-          </p>
+        <div className='flex items-center gap-2'>
+          <Ticket className='h-5 w-5 ' />
+          <h1 className='text-xl font-bold '>View your tickets</h1>
         </div>
         <CreateTicketDialog experienceId={experienceId} />
       </div>

@@ -15,10 +15,7 @@ export default function CustomerPortalPage({
     <div className='space-y-6'>
       <div className='flex justify-between items-start'>
         <div>
-          <h1 className='text-3xl font-bold '>Support Tickets</h1>
-          <p className='text-muted-foreground mt-2'>
-            View your support requests and get help from our team
-          </p>
+          <h1 className='text-xl font-bold '>View your support tickets</h1>
         </div>
         <CreateTicketDialog experienceId={experienceId} />
       </div>

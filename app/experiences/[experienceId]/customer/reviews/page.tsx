@@ -40,6 +40,356 @@ interface Ticket {
   createdAt: string;
 }
 
+// Componente para o cabeçalho da página
+const ReviewsHeader = () => (
+  <div className='mb-8'>
+    <div className='flex items-center gap-3 mb-2'>
+      <h1 className='text-3xl font-bold '>Reviews & Feedback</h1>
+    </div>
+    <p className='text-muted-foreground text-lg'>
+      Discover what others are saying about this Whop
+    </p>
+  </div>
+);
+
+// Componente para renderizar estrelas
+const StarRating = ({
+  rating,
+  size = 'md',
+}: {
+  rating: number;
+  size?: 'sm' | 'md' | 'lg';
+}) => {
+  const sizeClasses = {
+    sm: 'h-3 w-3',
+    md: 'h-4 w-4',
+    lg: 'h-5 w-5',
+  };
+
+  return (
+    <div className='flex items-center gap-0.5'>
+      {[1, 2, 3, 4, 5].map(star => (
+        <Star
+          key={star}
+          className={`${sizeClasses[size]} ${star <= rating ? 'fill-primary text-primary' : 'text-muted-foreground'}`}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Componente para estatísticas de review
+const ReviewStats = ({
+  averageRating,
+  totalReviews,
+  pendingReviews,
+}: {
+  averageRating: number;
+  totalReviews: number;
+  pendingReviews: number;
+}) => (
+  <Card className='mb-8'>
+    <CardHeader className='pb-4'>
+      <CardTitle className='flex items-center gap-2 text-xl'>
+        <TrendingUp className='h-5 w-5 text-primary' />
+        Overview
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
+        {/* Average Rating */}
+        <div className='text-center'>
+          <div className='mb-3'>
+            <div className='text-4xl font-bold text-primary mb-1'>
+              {averageRating.toFixed(1)}
+            </div>
+            <div className='flex justify-center mb-2'>
+              <StarRating rating={Math.round(averageRating)} size='lg' />
+            </div>
+            <div className='text-sm text-muted-foreground font-medium'>
+              Average Rating
+            </div>
+          </div>
+        </div>
+
+        {/* Total Reviews */}
+        <div className='text-center'>
+          <div className='mb-3'>
+            <div className='text-4xl font-bold text-blue-600 mb-1'>
+              {totalReviews}
+            </div>
+            <div className='flex justify-center mb-2'>
+              <Users className='h-5 w-5 text-blue-600' />
+            </div>
+            <div className='text-sm text-muted-foreground font-medium'>
+              Total Reviews
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Reviews */}
+        <div className='text-center'>
+          <div className='mb-3'>
+            <div className='text-4xl font-bold text-muted-foreground mb-1'>
+              {pendingReviews}
+            </div>
+            <div className='flex justify-center mb-2'>
+              <Clock className='h-5 w-5 text-muted-foreground' />
+            </div>
+            <div className='text-sm text-muted-foreground font-medium'>
+              Pending Reviews
+            </div>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// Componente para distribuição de ratings
+const RatingDistribution = ({
+  distribution,
+  totalReviews,
+}: {
+  distribution: Record<number, number>;
+  totalReviews: number;
+}) => (
+  <>
+    <Separator className='my-6' />
+    <div>
+      <h3 className='font-semibold mb-4 '>Rating Distribution</h3>
+      <div className='space-y-3'>
+        {Object.entries(distribution)
+          .reverse()
+          .map(([rating, count]) => {
+            const percentage =
+              totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+            return (
+              <div key={rating} className='flex items-center gap-4'>
+                <div className='flex items-center gap-1 w-12'>
+                  <span className='text-sm font-medium'>{rating}</span>
+                  <Star className='h-3 w-3 fill-primary text-primary' />
+                </div>
+                <div className='flex-1'>
+                  <Progress value={percentage} className='h-2' />
+                </div>
+                <span className='text-sm text-muted-foreground w-8 text-right'>
+                  {count}
+                </span>
+              </div>
+            );
+          })}
+      </div>
+    </div>
+  </>
+);
+
+// Componente para seção de tickets pendentes
+const PendingReviewsSection = ({
+  userTickets,
+  onWriteReview,
+}: {
+  userTickets: Ticket[];
+  onWriteReview: (ticket: Ticket) => void;
+}) => {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  if (userTickets.length === 0) return null;
+
+  return (
+    <Card className='mb-8 border-l-4 border-l-emerald-500 shadow-md'>
+      <CardHeader>
+        <CardTitle className='flex items-center gap-2 text-emerald-700'>
+          <MessageCircle className='h-5 w-5' />
+          Share Your Experience
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className='text-muted-foreground mb-6'>
+          You have{' '}
+          <span className='font-semibold text-emerald-600'>
+            {userTickets.length}
+          </span>{' '}
+          completed ticket
+          {userTickets.length !== 1 ? 's' : ''} ready for review.
+        </p>
+        <div className='space-y-4'>
+          {userTickets.map(ticket => (
+            <div
+              key={ticket.id}
+              className='flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-emerald-300 hover:shadow-sm transition-all duration-200'
+            >
+              <div className='flex-1'>
+                <h4 className='font-semibold text-muted-foreground mb-1'>
+                  {ticket.title}
+                </h4>
+                <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                  <Calendar className='h-4 w-4' />
+                  Completed on {formatDate(ticket.createdAt)}
+                </div>
+              </div>
+              <Button
+                onClick={() => onWriteReview(ticket)}
+                className='bg-emerald-600 hover:bg-emerald-700 text-white'
+              >
+                Write Review
+              </Button>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Componente para um review individual
+const ReviewCard = ({ review }: { review: Review }) => {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  return (
+    <Card className='border-0 shadow-md hover:shadow-lg transition-shadow duration-200'>
+      <CardContent className='p-6'>
+        {/* Review Header */}
+        <div className='flex items-start justify-between mb-4'>
+          <div className='flex items-center gap-4'>
+            <Avatar className='h-12 w-12 border-2 '>
+              <AvatarImage
+                src={`/placeholder.svg?height=48&width=48&text=${review.username.charAt(0)}`}
+              />
+              <AvatarFallback className=' font-semibold'>
+                {review.username.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h4 className='font-semibold '>{review.username}</h4>
+              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                <Calendar className='h-4 w-4' />
+                {formatDate(review.createdAt)}
+              </div>
+            </div>
+          </div>
+          <div className='flex items-center gap-2 border-primary border px-3 py-1 rounded-full'>
+            <StarRating rating={review.rating} />
+            <span className='text-sm font-semibold text-primary'>
+              {review.rating}/5
+            </span>
+          </div>
+        </div>
+
+        {/* Ticket Reference */}
+        <div className='mb-4 p-3  rounded-lg border-l-4 border-l-blue-500'>
+          <h5 className='font-medium mb-1'>Regarding: {review.ticket.title}</h5>
+          <p className='text-sm text-muted-foreground line-clamp-2'>
+            {review.ticket.description}
+          </p>
+        </div>
+
+        {/* Review Feedback */}
+        {review.feedback && (
+          <div className='relative'>
+            <Quote className='absolute top-2 left-2 h-5 w-5 text-muted-foreground' />
+            <div className=' rounded-lg p-4 pl-10'>
+              <p className='text-muted-foreground leading-relaxed italic'>
+                {review.feedback}
+              </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Componente para lista de reviews
+const ReviewsList = ({ reviews }: { reviews: Review[] }) => (
+  <div className='space-y-6'>
+    <div className='flex items-center justify-between'>
+      <h2 className='text-2xl font-bold '>Customer Reviews</h2>
+      <Badge variant='secondary' className='px-3 py-1'>
+        {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+      </Badge>
+    </div>
+
+    {reviews.length === 0 ? (
+      <Card className='border-2 border-dashed border-gray-200'>
+        <CardContent className='py-16 text-center'>
+          <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+            <MessageCircle className='h-8 w-8 text-muted-foreground' />
+          </div>
+          <h3 className='text-xl font-semibold text-muted-foreground mb-2'>
+            No reviews yet
+          </h3>
+          <p className='text-muted-foreground max-w-md mx-auto'>
+            Be the first to share your experience and help others make informed
+            decisions!
+          </p>
+        </CardContent>
+      </Card>
+    ) : (
+      <div className='space-y-6'>
+        {reviews.map(review => (
+          <ReviewCard key={review.id} review={review} />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+// Componente de loading
+const LoadingSkeleton = () => (
+  <div className='container mx-auto px-4 py-8 space-y-8'>
+    <div className='space-y-2'>
+      <Skeleton className='h-8 w-48' />
+      <Skeleton className='h-4 w-96' />
+    </div>
+
+    <Card>
+      <CardHeader>
+        <Skeleton className='h-6 w-40' />
+      </CardHeader>
+      <CardContent>
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+          {[1, 2, 3].map(i => (
+            <div key={i} className='text-center space-y-2'>
+              <Skeleton className='h-8 w-16 mx-auto' />
+              <Skeleton className='h-4 w-24 mx-auto' />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+
+    <div className='space-y-4'>
+      {[1, 2, 3].map(i => (
+        <Card key={i}>
+          <CardContent className='p-6'>
+            <div className='flex items-start gap-4'>
+              <Skeleton className='h-12 w-12 rounded-full' />
+              <div className='flex-1 space-y-2'>
+                <Skeleton className='h-4 w-32' />
+                <Skeleton className='h-4 w-24' />
+                <Skeleton className='h-16 w-full' />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  </div>
+);
+
 const ReviewsPage = () => {
   const params = useParams();
   const experienceId = params.experienceId as string;
@@ -91,7 +441,7 @@ const ReviewsPage = () => {
   const getAverageRating = () => {
     if (reviews.length === 0) return 0;
     const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return (total / reviews.length).toFixed(1);
+    return total / reviews.length;
   };
 
   const getRatingDistribution = () => {
@@ -102,321 +452,45 @@ const ReviewsPage = () => {
     return distribution;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const handleWriteReview = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setShowReviewDialog(true);
   };
-
-  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
-    const sizeClasses = {
-      sm: 'h-3 w-3',
-      md: 'h-4 w-4',
-      lg: 'h-5 w-5',
-    };
-
-    return (
-      <div className='flex items-center gap-0.5'>
-        {[1, 2, 3, 4, 5].map(star => (
-          <Star
-            key={star}
-            className={`${sizeClasses[size]} ${star <= rating ? 'fill-primary text-primary' : 'text-muted-foreground'}`}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  const LoadingSkeleton = () => (
-    <div className='container mx-auto px-4 py-8 space-y-8'>
-      <div className='space-y-2'>
-        <Skeleton className='h-8 w-48' />
-        <Skeleton className='h-4 w-96' />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <Skeleton className='h-6 w-40' />
-        </CardHeader>
-        <CardContent>
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-            {[1, 2, 3].map(i => (
-              <div key={i} className='text-center space-y-2'>
-                <Skeleton className='h-8 w-16 mx-auto' />
-                <Skeleton className='h-4 w-24 mx-auto' />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className='space-y-4'>
-        {[1, 2, 3].map(i => (
-          <Card key={i}>
-            <CardContent className='p-6'>
-              <div className='flex items-start gap-4'>
-                <Skeleton className='h-12 w-12 rounded-full' />
-                <div className='flex-1 space-y-2'>
-                  <Skeleton className='h-4 w-32' />
-                  <Skeleton className='h-4 w-24' />
-                  <Skeleton className='h-16 w-full' />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
 
   if (isLoading) {
     return <LoadingSkeleton />;
   }
 
-  const averageRating = Number.parseFloat(getAverageRating());
+  const averageRating = getAverageRating();
   const distribution = getRatingDistribution();
 
   return (
     <div className=''>
-      {/* Header */}
-      <div className='mb-8'>
-        <div className='flex items-center gap-3 mb-2'>
-          <h1 className='text-3xl font-bold '>Reviews & Feedback</h1>
-        </div>
-        <p className='text-muted-foreground text-lg'>
-          Discover what others are saying about this Whop
-        </p>
-      </div>
+      <ReviewsHeader />
 
-      {/* Review Summary */}
-      <Card className='mb-8'>
-        <CardHeader className='pb-4'>
-          <CardTitle className='flex items-center gap-2 text-xl'>
-            <TrendingUp className='h-5 w-5 text-primary' />
-            Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-            {/* Average Rating */}
-            <div className='text-center'>
-              <div className='mb-3'>
-                <div className='text-4xl font-bold text-primary mb-1'>
-                  {getAverageRating()}
-                </div>
-                <div className='flex justify-center mb-2'>
-                  {renderStars(Math.round(averageRating), 'lg')}
-                </div>
-                <div className='text-sm text-muted-foreground font-medium'>
-                  Average Rating
-                </div>
-              </div>
-            </div>
+      <ReviewStats
+        averageRating={averageRating}
+        totalReviews={reviews.length}
+        pendingReviews={userTickets.length}
+      />
 
-            {/* Total Reviews */}
-            <div className='text-center'>
-              <div className='mb-3'>
-                <div className='text-4xl font-bold text-blue-600 mb-1'>
-                  {reviews.length}
-                </div>
-                <div className='flex justify-center mb-2'>
-                  <Users className='h-5 w-5 text-blue-600' />
-                </div>
-                <div className='text-sm text-muted-foreground font-medium'>
-                  Total Reviews
-                </div>
-              </div>
-            </div>
-
-            {/* Pending Reviews */}
-            <div className='text-center'>
-              <div className='mb-3'>
-                <div className='text-4xl font-bold text-muted-foreground mb-1'>
-                  {userTickets.length}
-                </div>
-                <div className='flex justify-center mb-2'>
-                  <Clock className='h-5 w-5 text-muted-foreground' />
-                </div>
-                <div className='text-sm text-muted-foreground font-medium'>
-                  Pending Reviews
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Rating Distribution */}
-          {reviews.length > 0 && (
-            <>
-              <Separator className='my-6' />
-              <div>
-                <h3 className='font-semibold mb-4 '>Rating Distribution</h3>
-                <div className='space-y-3'>
-                  {Object.entries(distribution)
-                    .reverse()
-                    .map(([rating, count]) => {
-                      const percentage =
-                        reviews.length > 0 ? (count / reviews.length) * 100 : 0;
-                      return (
-                        <div key={rating} className='flex items-center gap-4'>
-                          <div className='flex items-center gap-1 w-12'>
-                            <span className='text-sm font-medium'>
-                              {rating}
-                            </span>
-                            <Star className='h-3 w-3 fill-primary text-primary' />
-                          </div>
-                          <div className='flex-1'>
-                            <Progress value={percentage} className='h-2' />
-                          </div>
-                          <span className='text-sm text-muted-foreground w-8 text-right'>
-                            {count}
-                          </span>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Write Review Section */}
-      {userTickets.length > 0 && (
-        <Card className='mb-8 border-l-4 border-l-emerald-500 shadow-md'>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2 text-emerald-700'>
-              <MessageCircle className='h-5 w-5' />
-              Share Your Experience
-            </CardTitle>
-          </CardHeader>
+      {reviews.length > 0 && (
+        <Card className='mb-8'>
           <CardContent>
-            <p className='text-gray-600 mb-6'>
-              You have{' '}
-              <span className='font-semibold text-emerald-600'>
-                {userTickets.length}
-              </span>{' '}
-              completed ticket
-              {userTickets.length !== 1 ? 's' : ''} ready for review.
-            </p>
-            <div className='space-y-4'>
-              {userTickets.map(ticket => (
-                <div
-                  key={ticket.id}
-                  className='flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-emerald-300 hover:shadow-sm transition-all duration-200'
-                >
-                  <div className='flex-1'>
-                    <h4 className='font-semibold text-gray-900 mb-1'>
-                      {ticket.title}
-                    </h4>
-                    <div className='flex items-center gap-2 text-sm text-gray-500'>
-                      <Calendar className='h-4 w-4' />
-                      Completed on {formatDate(ticket.createdAt)}
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => {
-                      setSelectedTicket(ticket);
-                      setShowReviewDialog(true);
-                    }}
-                    className='bg-emerald-600 hover:bg-emerald-700 text-white'
-                  >
-                    Write Review
-                  </Button>
-                </div>
-              ))}
-            </div>
+            <RatingDistribution
+              distribution={distribution}
+              totalReviews={reviews.length}
+            />
           </CardContent>
         </Card>
       )}
 
-      {/* Reviews List */}
-      <div className='space-y-6'>
-        <div className='flex items-center justify-between'>
-          <h2 className='text-2xl font-bold '>Customer Reviews</h2>
-          <Badge variant='secondary' className='px-3 py-1'>
-            {reviews.length} review{reviews.length !== 1 ? 's' : ''}
-          </Badge>
-        </div>
+      <PendingReviewsSection
+        userTickets={userTickets}
+        onWriteReview={handleWriteReview}
+      />
 
-        {reviews.length === 0 ? (
-          <Card className='border-2 border-dashed border-gray-200'>
-            <CardContent className='py-16 text-center'>
-              <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-                <MessageCircle className='h-8 w-8 text-muted-foreground' />
-              </div>
-              <h3 className='text-xl font-semibold text-muted-foreground mb-2'>
-                No reviews yet
-              </h3>
-              <p className='text-muted-foreground max-w-md mx-auto'>
-                Be the first to share your experience and help others make
-                informed decisions!
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className='space-y-6'>
-            {reviews.map(review => (
-              <Card
-                key={review.id}
-                className='border-0 shadow-md hover:shadow-lg transition-shadow duration-200'
-              >
-                <CardContent className='p-6'>
-                  {/* Review Header */}
-                  <div className='flex items-start justify-between mb-4'>
-                    <div className='flex items-center gap-4'>
-                      <Avatar className='h-12 w-12 border-2 '>
-                        <AvatarImage
-                          src={`/placeholder.svg?height=48&width=48&text=${review.username.charAt(0)}`}
-                        />
-                        <AvatarFallback className=' font-semibold'>
-                          {review.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className='font-semibold '>{review.username}</h4>
-                        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                          <Calendar className='h-4 w-4' />
-                          {formatDate(review.createdAt)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className='flex items-center gap-2 border-primary border px-3 py-1 rounded-full'>
-                      {renderStars(review.rating)}
-                      <span className='text-sm font-semibold text-primary'>
-                        {review.rating}/5
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Ticket Reference */}
-                  <div className='mb-4 p-3  rounded-lg border-l-4 border-l-blue-500'>
-                    <h5 className='font-medium mb-1'>
-                      Regarding: {review.ticket.title}
-                    </h5>
-                    <p className='text-sm text-muted-foreground line-clamp-2'>
-                      {review.ticket.description}
-                    </p>
-                  </div>
-
-                  {/* Review Feedback */}
-                  {review.feedback && (
-                    <div className='relative'>
-                      <Quote className='absolute top-2 left-2 h-5 w-5 text-muted-foreground' />
-                      <div className=' rounded-lg p-4 pl-10'>
-                        <p className='text-muted-foreground leading-relaxed italic'>
-                          {review.feedback}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+      <ReviewsList reviews={reviews} />
 
       {/* Review Dialog */}
       {selectedTicket && (
