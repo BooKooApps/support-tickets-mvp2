@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Settings } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useUser } from '@/hooks/use-user';
+import { Badge } from '@/components/ui/badge';
 
 export default function CustomerLayout({
   children,
@@ -32,8 +33,14 @@ export default function CustomerLayout({
               Admin Dashboard
             </Link>
           )}
-          <div className=''>
-            <ThemeToggle />
+
+          <div className='flex items-center gap-2'>
+            <Badge variant='outline'>
+              <span className='text-xs'>{user?.accessLevel}</span>
+            </Badge>
+            <div className=''>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
