@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { WhopIframeSdkProvider } from '@whop/react';
 
 const inter = Inter({ subsets: ['latin'] });
 
