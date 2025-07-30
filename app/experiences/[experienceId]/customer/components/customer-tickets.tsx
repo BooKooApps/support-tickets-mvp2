@@ -72,8 +72,8 @@ export function CustomerTickets({
   if (error) {
     return (
       <div className='text-center py-12'>
-        <div className='text-red-500 text-lg mb-2'>Error loading tickets</div>
-        <div className='text-gray-500 text-sm'>{error}</div>
+        <div className='text-destructive text-lg mb-2'>Error loading tickets</div>
+        <div className='text-muted-foreground text-sm'>{error}</div>
       </div>
     );
   }

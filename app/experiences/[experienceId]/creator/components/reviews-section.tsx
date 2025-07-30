@@ -38,11 +38,11 @@ export async function ReviewsSection() {
               <div key={rating} className='flex items-center gap-2'>
                 <div className='flex items-center gap-1 w-12'>
                   <span className='text-sm'>{rating}</span>
-                  <Star className='h-3 w-3 fill-yellow-400 text-yellow-400' />
+                  <Star className='h-3 w-3 text-primary' />
                 </div>
                 <div className='flex-1 bg-gray-200 rounded-full h-2'>
                   <div
-                    className='bg-yellow-400 h-2 rounded-full transition-all'
+                    className='bg-primary h-2 rounded-full transition-all'
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -73,12 +73,12 @@ export async function ReviewsSection() {
                     <div className='flex items-center gap-2'>
                       <Avatar className='h-8 w-8'>
                         <AvatarFallback className='text-sm'>
-                          {review.userId.charAt(0)}
+                          {review.username.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <div className='font-medium text-sm'>
-                          Customer {review.userId.slice(-4)}
+                          {review.username}
                         </div>
                         <div className='flex items-center gap-1'>
                           {[...Array(5)].map((_, i) => (
@@ -86,8 +86,8 @@ export async function ReviewsSection() {
                               key={i}
                               className={`h-3 w-3 ${
                                 i < review.rating
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-gray-300'
+                                  ? 'text-primary fill-primary'
+                                  : 'text-muted-foreground'
                               }`}
                             />
                           ))}
@@ -95,7 +95,7 @@ export async function ReviewsSection() {
                       </div>
                     </div>
                     <div className='text-right'>
-                      <div className='text-xs text-gray-500'>
+                      <div className='text-xs text-muted-foreground'>
                         {formatDate(new Date(review.createdAt))}
                       </div>
                       <Badge
@@ -111,12 +111,12 @@ export async function ReviewsSection() {
                     </div>
                   </div>
 
-                  <div className='text-sm text-gray-600 mb-2'>
+                  <div className='text-sm text-muted-foreground mb-2'>
                     <strong>Ticket:</strong> {review.ticket.title}
                   </div>
 
                   {review.feedback && (
-                    <p className='text-sm text-gray-700'>{review.feedback}</p>
+                    <p className='text-sm '>{review.feedback}</p>
                   )}
                 </div>
               ))}
@@ -127,7 +127,6 @@ export async function ReviewsSection() {
     </div>
   );
 }
-
 async function getRatingDistribution() {
   const reviews = await prisma.review.groupBy({
     by: ['rating'],

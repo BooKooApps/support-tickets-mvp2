@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
+import { whopSdk } from '@/lib/whop-api';
 
 export async function GET(
   request: NextRequest,
@@ -106,6 +107,12 @@ export async function POST(
       },
     };
 
+    await sendMessageToWebsocket(
+      messageWithSender,
+      ticketId,
+      ticket.experienceId
+    );
+
     return NextResponse.json(messageWithSender);
   } catch (error) {
     console.error('Error creating message:', error);
@@ -115,3 +122,33 @@ export async function POST(
     );
   }
 }
+
+const sendMessageToWebsocket = async (
+  message: any,
+  ticketId: string,
+  experienceId: string
+) => {
+  if (!experienceId) {
+    console.error('Experience ID is not set - websocket message not sent');
+    return;
+  }
+
+  try {
+    // Send websocket message with ticket-specific identifier
+    const websocketMessage = {
+      type: 'NEW_MESSAGE',
+      ticketId,
+      data: message,
+    };
+
+    await whopSdk.websockets.sendMessage({
+      target: { experience: experienceId },
+      message: JSON.stringify(websocketMessage),
+    });
+
+    console.log(`Websocket message sent for ticket ${ticketId}`);
+  } catch (error) {
+    console.error('Failed to send websocket message:', error);
+    // Don't throw the error to avoid failing the message creation
+  }
+};

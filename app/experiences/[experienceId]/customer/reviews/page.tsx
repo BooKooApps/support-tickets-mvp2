@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Star,
   MessageCircle,
@@ -18,6 +19,7 @@ import {
   Quote,
 } from 'lucide-react';
 import { ReviewDialog } from '../components/review-dialog';
+import { EditReviewDialog } from '../components/edit-review-dialog';
 import { useParams } from 'next/navigation';
 
 interface Review {
@@ -249,7 +251,15 @@ const PendingReviewsSection = ({
 };
 
 // Componente para um review individual
-const ReviewCard = ({ review }: { review: Review }) => {
+const ReviewCard = ({
+  review,
+  showEditButton = false,
+  onEdit,
+}: {
+  review: Review;
+  showEditButton?: boolean;
+  onEdit?: (review: Review) => void;
+}) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -280,11 +290,23 @@ const ReviewCard = ({ review }: { review: Review }) => {
               </div>
             </div>
           </div>
-          <div className='flex items-center gap-2 border-primary border px-3 py-1 rounded-full'>
-            <StarRating rating={review.rating} />
-            <span className='text-sm font-semibold text-primary'>
-              {review.rating}/5
-            </span>
+          <div className='flex items-center gap-2'>
+            <div className='flex items-center gap-2 border-primary border px-3 py-1 rounded-full'>
+              <StarRating rating={review.rating} />
+              <span className='text-sm font-semibold text-primary'>
+                {review.rating}/5
+              </span>
+            </div>
+            {showEditButton && (
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() => onEdit?.(review)}
+                className='text-xs'
+              >
+                Edit
+              </Button>
+            )}
           </div>
         </div>
 
@@ -313,7 +335,15 @@ const ReviewCard = ({ review }: { review: Review }) => {
 };
 
 // Componente para lista de reviews
-const ReviewsList = ({ reviews }: { reviews: Review[] }) => (
+const ReviewsList = ({
+  reviews,
+  showEditButtons = false,
+  onEditReview,
+}: {
+  reviews: Review[];
+  showEditButtons?: boolean;
+  onEditReview?: (review: Review) => void;
+}) => (
   <div className='space-y-6'>
     <div className='flex items-center justify-between'>
       <h2 className='text-2xl font-bold '>Customer Reviews</h2>
@@ -340,7 +370,12 @@ const ReviewsList = ({ reviews }: { reviews: Review[] }) => (
     ) : (
       <div className='space-y-6'>
         {reviews.map(review => (
-          <ReviewCard key={review.id} review={review} />
+          <ReviewCard
+            key={review.id}
+            review={review}
+            showEditButton={showEditButtons}
+            onEdit={onEditReview}
+          />
         ))}
       </div>
     )}
@@ -394,13 +429,18 @@ const ReviewsPage = () => {
   const params = useParams();
   const experienceId = params.experienceId as string;
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [userTickets, setUserTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  const [showEditReviewDialog, setShowEditReviewDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     fetchReviews();
+    fetchUserReviews();
     fetchUserTickets();
   }, [experienceId]);
 
@@ -415,6 +455,20 @@ const ReviewsPage = () => {
       console.error('Error fetching reviews:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchUserReviews = async () => {
+    try {
+      const response = await fetch(
+        `/api/reviews?experienceId=${experienceId}&userOnly=true`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setUserReviews(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user reviews:', error);
     }
   };
 
@@ -435,6 +489,7 @@ const ReviewsPage = () => {
 
   const handleReviewSubmitted = () => {
     fetchReviews();
+    fetchUserReviews();
     fetchUserTickets();
   };
 
@@ -455,6 +510,18 @@ const ReviewsPage = () => {
   const handleWriteReview = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setShowReviewDialog(true);
+  };
+
+  const handleEditReview = (review: Review) => {
+    setSelectedReview(review);
+    setShowEditReviewDialog(true);
+  };
+
+  const handleReviewUpdated = () => {
+    fetchReviews();
+    fetchUserReviews();
+    setShowEditReviewDialog(false);
+    setSelectedReview(null);
   };
 
   if (isLoading) {
@@ -490,7 +557,24 @@ const ReviewsPage = () => {
         onWriteReview={handleWriteReview}
       />
 
-      <ReviewsList reviews={reviews} />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
+        <TabsList className='grid w-full grid-cols-2'>
+          <TabsTrigger value='all'>All Reviews</TabsTrigger>
+          <TabsTrigger value='mine'>My Reviews</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value='all' className='mt-6'>
+          <ReviewsList reviews={reviews} />
+        </TabsContent>
+
+        <TabsContent value='mine' className='mt-6'>
+          <ReviewsList
+            reviews={userReviews}
+            showEditButtons={true}
+            onEditReview={handleEditReview}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Review Dialog */}
       {selectedTicket && (
@@ -502,6 +586,14 @@ const ReviewsPage = () => {
           onReviewSubmitted={handleReviewSubmitted}
         />
       )}
+
+      {/* Edit Review Dialog */}
+      <EditReviewDialog
+        open={showEditReviewDialog}
+        onOpenChange={setShowEditReviewDialog}
+        review={selectedReview}
+        onReviewUpdated={handleReviewUpdated}
+      />
     </div>
   );
 };

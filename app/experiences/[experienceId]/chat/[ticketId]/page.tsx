@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import { getTimeAgo } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
 import { Ticket, Category } from '@prisma/client';
+import { useOnWebsocketMessage } from '@whop/react';
 
 type Message = {
   id: string;
@@ -41,6 +42,12 @@ type Message = {
     name: string;
     role: 'USER' | 'CREATOR';
   };
+};
+
+type WebsocketMessage = {
+  type: 'NEW_MESSAGE';
+  ticketId: string;
+  data: Message;
 };
 
 type TicketWithRelations = Ticket & {
@@ -64,6 +71,25 @@ export default function ChatPage() {
   const router = useRouter();
   const experienceId = params.experienceId as string;
   const ticketId = params.ticketId as string;
+
+  useOnWebsocketMessage(message => {
+    if (message.isTrusted) {
+      try {
+        const websocketMessage: WebsocketMessage = JSON.parse(message.json);
+
+        // Only handle NEW_MESSAGE type and for the current ticket
+        if (
+          websocketMessage.type === 'NEW_MESSAGE' &&
+          websocketMessage.ticketId === ticketId &&
+          websocketMessage.data
+        ) {
+          setMessages(prev => [...prev, websocketMessage.data]);
+        }
+      } catch (error) {
+        console.error('Failed to parse websocket message:', error);
+      }
+    }
+  });
 
   const [ticket, setTicket] = useState<TicketWithRelations | null>(null);
   const [ticketLoading, setTicketLoading] = useState(true);
@@ -207,10 +233,10 @@ export default function ChatPage() {
   // Show loading state
   if (userLoading || ticketLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading chat...</p>
+      <div className='fixed inset-0 flex items-center justify-center bg-background z-50'>
+        <div className='text-center'>
+          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
+          <p className='text-muted-foreground'>Loading chat...</p>
         </div>
       </div>
     );

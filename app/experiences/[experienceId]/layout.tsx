@@ -10,8 +10,8 @@ export default async function ExperienceLayout({
   const { experienceId } = await params;
 
   return (
-    <>
+    <WhopWebsocketProvider joinExperience={experienceId}>
       {children}
-    </>
+    </WhopWebsocketProvider>
   );
 }
