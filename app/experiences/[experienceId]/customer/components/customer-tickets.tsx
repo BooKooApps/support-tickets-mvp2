@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Ticket, Category } from '@prisma/client';
+import { CustomerTicketsSkeleton } from '../page';
 
 type TicketWithRelations = Ticket & {
   category: Category;
@@ -65,15 +66,7 @@ export function CustomerTickets({
   }, [experienceId, currentPage]);
 
   if (loading) {
-    return (
-      <div className='space-y-4'>
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className='animate-pulse'>
-            <div className='bg-gray-200 h-24 rounded-lg'></div>
-          </div>
-        ))}
-      </div>
-    );
+    return <CustomerTicketsSkeleton />;
   }
 
   if (error) {

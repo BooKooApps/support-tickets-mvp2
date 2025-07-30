@@ -65,7 +65,7 @@ export default function CustomerPortalPage({
   );
 }
 
-function CustomerTicketsSkeleton() {
+export function CustomerTicketsSkeleton() {
   return (
     <div className='space-y-4'>
       {[...Array(3)].map((_, i) => (
