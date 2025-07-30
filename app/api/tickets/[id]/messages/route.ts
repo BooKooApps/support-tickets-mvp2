@@ -4,12 +4,14 @@ import { verifyUser } from '@/lib/authentication';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: ticketId } = await params;
+
   try {
     // Get the ticket to verify access
     const ticket = await prisma.ticket.findUnique({
-      where: { id: params.id },
+      where: { id: ticketId },
     });
 
     if (!ticket) {
@@ -30,7 +32,7 @@ export async function GET(
     }
 
     const messages = await prisma.message.findMany({
-      where: { ticketId: params.id },
+      where: { ticketId: ticketId },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -56,12 +58,14 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: ticketId } = await params;
+
   try {
     // Get the ticket to verify access
     const ticket = await prisma.ticket.findUnique({
-      where: { id: params.id },
+      where: { id: ticketId },
     });
 
     if (!ticket) {
@@ -86,7 +90,7 @@ export async function POST(
     const message = await prisma.message.create({
       data: {
         content,
-        ticketId: params.id,
+        ticketId: ticketId,
         senderId: userId,
         username: username,
       },

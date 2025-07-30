@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getTimeAgo } from '@/lib/utils';
 import { MessageCircle, Clock, User } from 'lucide-react';
-import { TicketChat } from './ticket-chat';
 import { Ticket, Category } from '@prisma/client';
 
 type TicketWithRelations = Ticket & {
@@ -30,7 +30,7 @@ interface TicketCardProps {
 }
 
 export function TicketCard({ ticket }: TicketCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClaim = async () => {
@@ -128,13 +128,17 @@ export function TicketCard({ ticket }: TicketCardProps) {
                 Close Ticket
               </Button>
             )}
-            {/* <Button
+            <Button
               size='sm'
               variant='ghost'
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() =>
+                router.push(
+                  `/experiences/${ticket.experienceId}/chat/${ticket.id}`
+                )
+              }
             >
-              {isExpanded ? 'Collapse' : 'View Chat'}
-            </Button> */}
+              View Chat
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -155,12 +159,6 @@ export function TicketCard({ ticket }: TicketCardProps) {
             </div>
             <p className='text-gray-600'>{ticket.description}</p>
           </div>
-
-          {isExpanded && (
-            <div className='border-t pt-4'>
-              <TicketChat ticketId={ticket.id} />
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getTimeAgo } from '@/lib/utils';
 import { MessageCircle, Clock } from 'lucide-react';
-import { TicketChat } from '@/app/experiences/[experienceId]/creator/components/ticket-chat';
 import { ReviewDialog } from './review-dialog';
 import { Ticket, Category } from '@prisma/client';
 
@@ -30,7 +30,7 @@ interface CustomerTicketCardProps {
 }
 
 export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const router = useRouter();
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -102,13 +102,17 @@ export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
                   Close Ticket
                 </Button>
               )}
-              {/* <Button
+              <Button
                 size='sm'
                 variant='ghost'
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() =>
+                  router.push(
+                    `/experiences/${ticket.experienceId}/chat/${ticket.id}`
+                  )
+                }
               >
-                {isExpanded ? 'Collapse' : 'View Chat'}
-              </Button> */}
+                View Chat
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -128,12 +132,6 @@ export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
               </Badge>
               <p className='text-gray-600'>{ticket.description}</p>
             </div>
-
-            {isExpanded && (
-              <div className='border-t pt-4'>
-                <TicketChat ticketId={ticket.id} />
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
