@@ -122,7 +122,6 @@ export async function POST(
     );
   }
 }
-
 const sendMessageToWebsocket = async (
   message: any,
   ticketId: string,

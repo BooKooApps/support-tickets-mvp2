@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useOnWebsocketMessage } from '@whop/react';
 import { CustomerTicketCard } from './customer-ticket-card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -23,6 +24,12 @@ type TicketWithRelations = Ticket & {
   };
 };
 
+interface WebsocketMessage {
+  type: string;
+  data: TicketWithRelations;
+  ticketId?: string;
+}
+
 interface CustomerTicketsProps {
   experienceId: string;
   currentPage: number;
@@ -39,29 +46,47 @@ export function CustomerTickets({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchTickets = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `/api/tickets?experienceId=${experienceId}&page=${currentPage}&limit=3`
-        );
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `/api/tickets?experienceId=${experienceId}&page=${currentPage}&limit=3`
+      );
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch tickets');
-        }
-
-        const data = await response.json();
-        setTickets(data.tickets);
-        setTotalPages(data.totalPages);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tickets');
       }
-    };
 
+      const data = await response.json();
+      setTickets(data.tickets);
+      setTotalPages(data.totalPages);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Listen for WebSocket messages
+  useOnWebsocketMessage(message => {
+    if (message.isTrusted) {
+      try {
+        const websocketMessage: WebsocketMessage = JSON.parse(message.json);
+
+        // Handle new ticket creation - refresh current data
+        if (websocketMessage.type === 'NEW_TICKET' && websocketMessage.data) {
+          // For customer view, we should refresh the data to maintain pagination
+          // Since the new ticket might affect the current page
+          fetchTickets();
+        }
+      } catch (error) {
+        console.error('Failed to parse websocket message:', error);
+      }
+    }
+  });
+
+  useEffect(() => {
     fetchTickets();
   }, [experienceId, currentPage]);
 
@@ -72,7 +97,9 @@ export function CustomerTickets({
   if (error) {
     return (
       <div className='text-center py-12'>
-        <div className='text-destructive text-lg mb-2'>Error loading tickets</div>
+        <div className='text-destructive text-lg mb-2'>
+          Error loading tickets
+        </div>
         <div className='text-muted-foreground text-sm'>{error}</div>
       </div>
     );

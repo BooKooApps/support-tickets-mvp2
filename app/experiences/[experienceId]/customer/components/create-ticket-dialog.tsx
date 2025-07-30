@@ -42,6 +42,7 @@ export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -88,8 +89,8 @@ export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
         setDescription('');
         setCategoryId('');
         setIsLoading(false);
-        // Refresh the page to show new ticket
-        window.location.reload();
+        // Close dialog - WebSocket will handle the UI update
+        setIsOpen(false);
       }
     } catch (error) {
       console.error('Failed to create ticket:', error);
@@ -99,7 +100,7 @@ export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
   };
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>
           <Plus className='h-4 w-4 mr-2' />

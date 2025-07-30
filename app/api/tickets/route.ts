@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
+import { whopSdk } from '@/lib/whop-api';
 
 export async function GET(request: NextRequest) {
   try {
@@ -94,6 +95,24 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Get the complete ticket with relations for WebSocket
+    const fullTicket = await prisma.ticket.findUnique({
+      where: { id: ticket.id },
+      include: {
+        category: true,
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+        _count: {
+          select: { messages: true },
+        },
+      },
+    });
+
+    // Send WebSocket notification for new ticket
+    await sendTicketToWebsocket(fullTicket, experienceId);
+
     return NextResponse.json(ticket);
   } catch (error) {
     console.error('Error creating ticket:', error);
@@ -103,3 +122,30 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+const sendTicketToWebsocket = async (ticket: any, experienceId: string) => {
+  if (!experienceId) {
+    console.error(
+      'Experience ID is not set - websocket ticket notification not sent'
+    );
+    return;
+  }
+
+  try {
+    // Send websocket message for new ticket
+    const websocketMessage = {
+      type: 'NEW_TICKET',
+      data: ticket,
+    };
+
+    await whopSdk.websockets.sendMessage({
+      target: { experience: experienceId },
+      message: JSON.stringify(websocketMessage),
+    });
+
+    console.log(`Websocket notification sent for new ticket ${ticket?.id}`);
+  } catch (error) {
+    console.error('Failed to send websocket ticket notification:', error);
+    // Don't throw the error to avoid failing the ticket creation
+  }
+};
