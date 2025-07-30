@@ -1,40 +1,95 @@
-import { prisma } from '@/lib/prisma';
+'use client';
 
+import { useEffect, useState } from 'react';
 import { CustomerTicketCard } from './customer-ticket-card';
-import { verifyUser } from '@/lib/authentication';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export async function CustomerTickets({
-  experienceId,
-}: {
+import { Ticket, Category } from '@prisma/client';
+
+type TicketWithRelations = Ticket & {
+  category: Category;
+  messages: Array<{
+    id: string;
+    content: string;
+    createdAt: Date;
+    updatedAt: Date;
+    ticketId: string;
+    senderId: string;
+  }>;
+  _count: {
+    messages: number;
+  };
+};
+
+interface CustomerTicketsProps {
   experienceId: string;
-}) {
-  const { userId } = await verifyUser(experienceId);
-  const tickets = await prisma.ticket.findMany({
-    where: {
-      experienceId: experienceId,
-      creatorId: userId,
-    },
-    include: {
-      category: true,
-      messages: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-      },
-      _count: {
-        select: { messages: true },
-      },
-    },
-    orderBy: [
-      { status: 'asc' }, // OPEN first
-      { createdAt: 'desc' },
-    ],
-  });
+  currentPage: number;
+  onPageChange: (page: number) => void;
+}
+
+export function CustomerTickets({
+  experienceId,
+  currentPage,
+  onPageChange,
+}: CustomerTicketsProps) {
+  const [tickets, setTickets] = useState<TicketWithRelations[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `/api/tickets?experienceId=${experienceId}&page=${currentPage}&limit=3`
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch tickets');
+        }
+
+        const data = await response.json();
+        setTickets(data.tickets);
+        setTotalPages(data.totalPages);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, [experienceId, currentPage]);
+
+  if (loading) {
+    return (
+      <div className='space-y-4'>
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className='animate-pulse'>
+            <div className='bg-gray-200 h-24 rounded-lg'></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='text-center py-12'>
+        <div className='text-red-500 text-lg mb-2'>Error loading tickets</div>
+        <div className='text-gray-500 text-sm'>{error}</div>
+      </div>
+    );
+  }
 
   if (tickets.length === 0) {
     return (
       <div className='text-center py-12'>
-        <div className='text-gray-400 text-lg mb-2'>No support tickets yet</div>
-        <div className='text-gray-500 text-sm'>
+        <div className=' text-lg mb-2'>No support tickets yet</div>
+        <div className='text-muted-foreground text-sm'>
           Click "Create Ticket" above to get started
         </div>
       </div>
@@ -42,10 +97,40 @@ export async function CustomerTickets({
   }
 
   return (
-    <div className='space-y-4'>
-      {tickets.map(ticket => (
-        <CustomerTicketCard key={ticket.id} ticket={ticket} />
-      ))}
+    <div className='space-y-6'>
+      <div className='space-y-4'>
+        {tickets.map(ticket => (
+          <CustomerTicketCard key={ticket.id} ticket={ticket} />
+        ))}
+      </div>
+
+      {totalPages > 1 && (
+        <div className='flex items-center justify-center gap-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
+          >
+            <ChevronLeft className='h-4 w-4' />
+            Previous
+          </Button>
+
+          <span className='text-sm text-muted-foreground'>
+            Page {currentPage} of {totalPages}
+          </span>
+
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+          >
+            Next
+            <ChevronRight className='h-4 w-4' />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

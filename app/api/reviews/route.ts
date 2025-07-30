@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentCustomer } from '@/lib/auth';
+import { verifyUser } from '@/lib/authentication';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Verify user has access to this experience
+    await verifyUser(experienceId);
 
     const reviews = await prisma.review.findMany({
       where: {
@@ -44,15 +47,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = getCurrentCustomer();
     const { ticketId, rating, feedback } = await request.json();
 
-    // Verify the ticket belongs to the user
+    // Verify the ticket exists and get its details
     const ticket = await prisma.ticket.findFirst({
       where: {
         id: ticketId,
-        // creatorId: user.id,
-        // status: 'CLOSED',
+        status: 'CLOSED',
       },
     });
 
@@ -60,6 +61,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Ticket not found or not closed' },
         { status: 404 }
+      );
+    }
+
+    // Verify user has access to this experience and is the ticket creator
+    const { userId, username } = await verifyUser(ticket.experienceId);
+
+    if (ticket.creatorId !== userId) {
+      return NextResponse.json(
+        { error: 'You can only review your own tickets' },
+        { status: 403 }
       );
     }
 
@@ -80,8 +91,8 @@ export async function POST(request: NextRequest) {
         rating,
         feedback,
         ticketId,
-        userId: user.id,
-        username: user.name,
+        userId: userId,
+        username: username,
         experienceId: ticket.experienceId,
       },
     });

@@ -20,9 +20,15 @@ export async function POST(
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    const { accessLevel } = await verifyUser(existingTicket.experienceId);
+    const { userId, accessLevel } = await verifyUser(
+      existingTicket.experienceId
+    );
 
-    if (accessLevel !== 'admin') {
+    // Check if user is admin or the ticket creator
+    const isAdmin = accessLevel === 'admin';
+    const isCreator = existingTicket.creatorId === userId;
+
+    if (!isAdmin && !isCreator) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

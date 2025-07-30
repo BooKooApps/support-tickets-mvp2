@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyUser } from '@/lib/authentication';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +12,9 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Verify user has access to this experience
+    await verifyUser(experienceId);
 
     const categories = await prisma.category.findMany({
       where: { experienceId },
@@ -36,6 +40,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Name and experienceId are required' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has admin access to this experience
+    const { accessLevel } = await verifyUser(experienceId);
+
+    if (accessLevel !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only admins can create categories' },
+        { status: 403 }
       );
     }
 

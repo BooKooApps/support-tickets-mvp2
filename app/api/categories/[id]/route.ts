@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyUser } from '@/lib/authentication';
 
 export async function PUT(
   request: NextRequest,
@@ -14,6 +15,16 @@ export async function PUT(
       return NextResponse.json(
         { error: 'experienceId is required' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has admin access to this experience
+    const { accessLevel } = await verifyUser(experienceId);
+
+    if (accessLevel !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only admins can update categories' },
+        { status: 403 }
       );
     }
 
@@ -52,6 +63,16 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'experienceId is required' },
         { status: 400 }
+      );
+    }
+
+    // Verify user has admin access to this experience
+    const { accessLevel } = await verifyUser(experienceId);
+
+    if (accessLevel !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only admins can delete categories' },
+        { status: 403 }
       );
     }
 

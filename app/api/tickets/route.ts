@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
-import { getCurrentCustomer } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
     const experienceId = request.nextUrl.searchParams.get('experienceId');
-    const user = getCurrentCustomer();
+    const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
+    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '3');
+    const offset = (page - 1) * limit;
 
     if (!experienceId) {
       return NextResponse.json(
@@ -15,21 +16,48 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const tickets = await prisma.ticket.findMany({
+    // Verify user has access to this experience
+    const { userId } = await verifyUser(experienceId);
+
+    // Get total count for pagination
+    const totalTickets = await prisma.ticket.count({
       where: {
         experienceId,
-        creatorId: user.id,
-      },
-      include: {
-        category: true,
-        review: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
+        creatorId: userId,
       },
     });
 
-    return NextResponse.json(tickets);
+    const totalPages = Math.ceil(totalTickets / limit);
+
+    const tickets = await prisma.ticket.findMany({
+      where: {
+        experienceId,
+        creatorId: userId,
+      },
+      include: {
+        category: true,
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+        _count: {
+          select: { messages: true },
+        },
+      },
+      orderBy: [
+        { status: 'asc' }, // OPEN first
+        { createdAt: 'desc' },
+      ],
+      skip: offset,
+      take: limit,
+    });
+
+    return NextResponse.json({
+      tickets,
+      totalPages,
+      currentPage: page,
+      totalTickets,
+    });
   } catch (error) {
     console.error('Error fetching tickets:', error);
     return NextResponse.json(

@@ -1,10 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+import { verifyUser } from '@/lib/authentication';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = getCurrentUser();
     const experienceId = request.nextUrl.searchParams.get('experienceId');
 
     if (!experienceId) {
@@ -14,11 +13,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Verify user has admin access to this experience
+    const { userId, accessLevel } = await verifyUser(experienceId);
+
+    if (accessLevel !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only admins can access settings' },
+        { status: 403 }
+      );
+    }
+
     let settings = await prisma.settings.findUnique({
       where: {
         experienceId_userId: {
           experienceId,
-          userId: user.id,
+          userId: userId,
         },
       },
     });
@@ -28,7 +37,7 @@ export async function GET(request: NextRequest) {
       settings = await prisma.settings.create({
         data: {
           experienceId,
-          userId: user.id,
+          userId: userId,
           agentName: 'Support Team',
           welcomeMessage: 'Welcome to our support! How can we help you today?',
           autoMessage:
@@ -53,7 +62,6 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const user = getCurrentUser();
     const experienceId = request.nextUrl.searchParams.get('experienceId');
     const data = await request.json();
 
@@ -64,11 +72,21 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Verify user has admin access to this experience
+    const { userId, accessLevel } = await verifyUser(experienceId);
+
+    if (accessLevel !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only admins can update settings' },
+        { status: 403 }
+      );
+    }
+
     const settings = await prisma.settings.upsert({
       where: {
         experienceId_userId: {
           experienceId,
-          userId: user.id,
+          userId: userId,
         },
       },
       update: {
@@ -81,7 +99,7 @@ export async function PUT(request: NextRequest) {
       },
       create: {
         experienceId,
-        userId: user.id,
+        userId: userId,
         agentName: data.agentName,
         welcomeMessage: data.welcomeMessage,
         autoMessage: data.autoMessage,

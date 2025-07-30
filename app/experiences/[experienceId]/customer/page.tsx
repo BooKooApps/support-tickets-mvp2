@@ -1,16 +1,48 @@
-import { Suspense } from 'react';
+'use client';
+
+import { Suspense, useEffect, useState } from 'react';
 import { CustomerTickets } from '@/app/experiences/[experienceId]/customer/components/customer-tickets';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreateTicketDialog } from './components/create-ticket-dialog';
 import { Ticket } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
-export default async function CustomerPortalPage({
+export default function CustomerPortalPage({
   params,
 }: {
   params: Promise<{ experienceId: string }>;
 }) {
-  const { experienceId } = await params;
+  const [experienceId, setExperienceId] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    params.then(({ experienceId }) => {
+      setExperienceId(experienceId);
+    });
+  }, [params]);
+
+  useEffect(() => {
+    const page = searchParams.get('page');
+    if (page) {
+      setCurrentPage(parseInt(page));
+    }
+  }, [searchParams]);
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage.toString());
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  if (!experienceId) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className='space-y-6'>
@@ -23,7 +55,11 @@ export default async function CustomerPortalPage({
       </div>
 
       <Suspense fallback={<CustomerTicketsSkeleton />}>
-        <CustomerTickets experienceId={experienceId} />
+        <CustomerTickets
+          experienceId={experienceId}
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+        />
       </Suspense>
     </div>
   );
@@ -32,7 +68,7 @@ export default async function CustomerPortalPage({
 function CustomerTicketsSkeleton() {
   return (
     <div className='space-y-4'>
-      {[...Array(2)].map((_, i) => (
+      {[...Array(3)].map((_, i) => (
         <Card key={i}>
           <CardHeader>
             <div className='flex items-center justify-between'>

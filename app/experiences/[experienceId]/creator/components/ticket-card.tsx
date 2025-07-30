@@ -99,7 +99,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
             <div className='flex items-center gap-4 text-sm text-gray-500'>
               <div className='flex items-center gap-1'>
                 <User className='h-4 w-4' />
-                {ticket.creatorId}
+                {ticket.username ?? 'Unknown User'}
               </div>
               <div className='flex items-center gap-1'>
                 <Clock className='h-4 w-4' />
