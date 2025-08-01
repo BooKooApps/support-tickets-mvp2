@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Check, Loader2, Plus } from 'lucide-react';
+import { TicketWithRelations } from './customer-tickets';
 
 interface Category {
   id: string;
@@ -34,9 +35,17 @@ interface Category {
 
 interface CreateTicketDialogProps {
   experienceId: string;
+  tickets: TicketWithRelations[];
+  fetchTickets: () => void;
+  setTickets: React.Dispatch<React.SetStateAction<TicketWithRelations[]>>;
 }
 
-export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
+export function CreateTicketDialog({
+  experienceId,
+  fetchTickets,
+  setTickets,
+  tickets,
+}: CreateTicketDialogProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -84,6 +93,7 @@ export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
       );
 
       if (response.ok) {
+        const data: { ticket: TicketWithRelations } = await response.json();
         // Reset form
         setTitle('');
         setDescription('');
@@ -91,6 +101,11 @@ export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
         setIsLoading(false);
         // Close dialog - WebSocket will handle the UI update
         setIsOpen(false);
+        if (tickets.length <= 2) {
+          setTickets(prev => [data.ticket, ...prev]);
+        } else {
+          fetchTickets();
+        }
       }
     } catch (error) {
       console.error('Failed to create ticket:', error);

@@ -19,12 +19,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function CustomerTicketCard({
   ticket,
-  viewerRole = 'customer',
+  accessLevel,
+  experienceId,
   setTickets,
 }: {
   ticket: TicketWithRelations;
-  setTickets: (tickets: TicketWithRelations[]) => void;
-  viewerRole?: 'customer' | 'creator';
+  experienceId: string;
+  setTickets: React.Dispatch<React.SetStateAction<TicketWithRelations[]>>;
+  accessLevel: 'customer' | 'admin';
 }) {
   const router = useRouter();
   const [showReviewDialog, setShowReviewDialog] = useState(false);
@@ -33,9 +35,12 @@ export function CustomerTicketCard({
   const handleClose = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/tickets/${ticket.id}/close`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `/api/tickets/${ticket.id}/close?experienceId=${experienceId}`,
+        {
+          method: 'POST',
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         if (data.shouldShowReviewDialog) {
@@ -44,6 +49,22 @@ export function CustomerTicketCard({
       }
     } catch (error) {
       console.error('Failed to close ticket:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClaim = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `/api/tickets/${ticket.id}/claim?experienceId=${experienceId}`,
+        {
+          method: 'POST',
+        }
+      );
+    } catch (error) {
+      console.error('Failed to claim ticket:', error);
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +96,7 @@ export function CustomerTicketCard({
 
   // Handler for clicking the card to go to chat
   const handleCardClick = () => {
-    router.push(`/experiences/${ticket.experienceId}/chat/${ticket.id}`);
+    router.push(`/experiences/${experienceId}/chat/${ticket.id}`);
   };
 
   return (
@@ -145,25 +166,21 @@ export function CustomerTicketCard({
 
             {/* Action Buttons */}
             <div
-              className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity'
+              className={
+                ticket.status === 'OPEN' && accessLevel === 'admin'
+                  ? 'flex items-center gap-2'
+                  : 'flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity'
+              }
               // Prevent card click when clicking on buttons
               onClick={e => e.stopPropagation()}
             >
-              {ticket.status !== 'CLOSED' && (
-                <Button
-                  size='sm'
-                  variant='outline'
-                  onClick={handleClose}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className='h-4 w-4 animate-spin' />
-                  ) : (
-                    <CheckCircle2 className='h-4 w-4 mr-1' />
-                  )}
-                  Close
-                </Button>
-              )}
+              <RenderActionButtons
+                ticket={ticket}
+                accessLevel={accessLevel}
+                isLoading={isLoading}
+                handleClose={handleClose}
+                handleClaim={handleClaim}
+              />
             </div>
           </div>
         </CardHeader>
@@ -187,3 +204,73 @@ export function CustomerTicketCard({
     </>
   );
 }
+
+const RenderActionButtons = ({
+  ticket,
+  accessLevel,
+  isLoading,
+  handleClose,
+  handleClaim,
+}: {
+  ticket: TicketWithRelations;
+  accessLevel: 'customer' | 'admin';
+  isLoading: boolean;
+  handleClose: () => void;
+  handleClaim: () => void;
+}) => {
+  if (accessLevel === 'admin') {
+    if (ticket.status === 'OPEN') {
+      return (
+        <Button
+          size='sm'
+          className='animate-pulse'
+          onClick={handleClaim}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <CheckCircle2 className='h-4 w-4 mr-1' />
+          )}
+          Claim Ticket
+        </Button>
+      );
+    }
+
+    if (ticket.status === 'CLAIMED') {
+      return (
+        <Button
+          size='sm'
+          variant='outline'
+          onClick={handleClose}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <CheckCircle2 className='h-4 w-4 mr-1' />
+          )}
+          Close
+        </Button>
+      );
+    }
+  }
+
+  if (ticket.status !== 'CLOSED') {
+    return (
+      <Button
+        size='sm'
+        variant='outline'
+        onClick={handleClose}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <Loader2 className='h-4 w-4 animate-spin' />
+        ) : (
+          <CheckCircle2 className='h-4 w-4 mr-1' />
+        )}
+        Close
+      </Button>
+    );
+  }
+};

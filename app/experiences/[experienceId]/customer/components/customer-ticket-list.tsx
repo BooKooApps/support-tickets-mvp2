@@ -8,19 +8,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TicketWithRelations } from './customer-tickets';
 
 const CustomerTicketList = ({
+  accessLevel,
   tickets,
   isLoading,
   setTickets,
   currentPage,
   totalPages,
   onPageChange,
+  experienceId,
 }: {
+  accessLevel: 'admin' | 'customer';
   tickets: TicketWithRelations[];
   isLoading: boolean;
-  setTickets: (tickets: TicketWithRelations[]) => void;
+  setTickets: React.Dispatch<React.SetStateAction<TicketWithRelations[]>>;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  experienceId: string;
 }) => {
   return (
     <div className='space-y-6'>
@@ -31,8 +35,10 @@ const CustomerTicketList = ({
           tickets.map(ticket => (
             <CustomerTicketCard
               key={ticket.id}
+              experienceId={experienceId}
               ticket={ticket}
               setTickets={setTickets}
+              accessLevel={accessLevel}
             />
           ))
         )}

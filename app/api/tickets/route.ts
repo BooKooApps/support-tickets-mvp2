@@ -144,7 +144,12 @@ export async function POST(request: NextRequest) {
 
     // Send WebSocket notification for new ticket
     if (fullTicket) {
-      await sendTicketToWebsocket(fullTicket, experienceId);
+      await sendTicketToWebsocket(
+        fullTicket,
+        experienceId,
+        companyId,
+        'NEW_TICKET'
+      );
     }
 
     return NextResponse.json(
@@ -163,9 +168,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-const sendTicketToWebsocket = async (
+export const sendTicketToWebsocket = async (
   ticket: TicketWithRelations,
-  experienceId: string
+  experienceId: string,
+  companyId: string,
+  type: 'NEW_TICKET' | 'TICKET_CLAIMED' | 'TICKET_CLOSED'
 ) => {
   if (!experienceId) {
     console.error(
@@ -177,7 +184,8 @@ const sendTicketToWebsocket = async (
   try {
     // Send websocket message for new ticket
     const websocketMessage = {
-      type: 'NEW_TICKET',
+      type,
+      companyId,
       data: ticket,
     };
 
