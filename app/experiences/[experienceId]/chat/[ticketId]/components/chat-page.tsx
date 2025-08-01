@@ -483,7 +483,7 @@ export default function ChatPage({
                   {!isCurrentUser && (
                     <div className='flex flex-col items-center mr-3'>
                       {isAgent ? (
-                        <Smile className='h-8 w-8' />
+                        <Smile className='h-8 w-8 text-muted-foreground' />
                       ) : (
                         <Avatar className='h-8 w-8'>
                           <AvatarImage src={avatarUrl} />
@@ -499,9 +499,9 @@ export default function ChatPage({
                       isCurrentUser
                         ? 'bg-primary text-primary-foreground'
                         : isAgent
-                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                          ? 'bg-muted text-muted-foreground'
                           : isCreator
-                            ? 'bg-blue-100 text-blue-900 border border-blue-200'
+                            ? 'bg-muted text-muted-foreground'
                             : 'bg-muted text-muted-foreground'
                     }`}
                   >

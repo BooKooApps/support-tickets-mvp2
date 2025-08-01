@@ -2,6 +2,12 @@ import { verifyUser } from '@/lib/authentication';
 import React from 'react';
 import ChatHeader from './components/chat-header';
 import { prisma } from '@/lib/prisma';
+import { TicketWithRelations } from '../../customer/components/customer-tickets';
+import { Category, Ticket, User } from '@prisma/client';
+export type TicketWithCreatorAndCategory = Ticket & {
+  category: Category;
+  creator: User;
+};
 
 const layout = async ({
   children,
@@ -14,13 +20,18 @@ const layout = async ({
 
   const { accessLevel } = await verifyUser(experienceId);
 
-  const ticket = await prisma.ticket.findUnique({
-    where: { id: ticketId },
-    include: {
-      creator: true,
-      category: true,
-    },
-  });
+  const ticket: TicketWithCreatorAndCategory | null =
+    await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        creator: true,
+        category: true,
+      },
+    });
+
+  if (!ticket) {
+    return <div>Ticket not found</div>;
+  }
 
   return (
     <div className='bg-background flex flex-col h-screen'>

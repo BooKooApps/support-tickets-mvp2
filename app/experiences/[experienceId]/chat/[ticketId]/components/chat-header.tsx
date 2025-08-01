@@ -9,16 +9,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { TicketWithRelations } from '../../../customer/components/customer-tickets';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getTimeAgo } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { TicketWithCreatorAndCategory } from '../layout';
 const ChatHeader = ({
   experienceId,
   ticket,
+  accessLevel,
 }: {
   experienceId: string;
-  ticket: TicketWithRelations;
+  ticket: TicketWithCreatorAndCategory;
+  accessLevel: 'admin' | 'customer';
 }) => {
   const [isTicketInfoModalOpen, setIsTicketInfoModalOpen] = useState(false);
   return (

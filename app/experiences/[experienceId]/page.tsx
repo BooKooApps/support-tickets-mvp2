@@ -81,9 +81,9 @@ export default async function HomePage({
     });
   }
 
-  const { user: whop_user } = await whopSdk
-    .withUser(userId)
-    .users.getCurrentUser();
+  const whop_user = await whopSdk.users.getUser({
+    userId,
+  });
 
   let user = await prisma.user.findUnique({
     where: {
@@ -97,7 +97,6 @@ export default async function HomePage({
         id: whop_user.id,
         name: whop_user.name,
         username: whop_user.username,
-        email: whop_user.email,
         avatarUrl: whop_user.profilePicture?.sourceUrl,
         createdAt: new Date(),
       },
@@ -106,8 +105,6 @@ export default async function HomePage({
 
   // Redirect to customer page by default
   if (accessLevel === 'admin') {
-    redirect(`/experiences/${experienceId}/creator`);
-  } else {
     redirect(`/experiences/${experienceId}/customer`);
   }
 }
