@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus } from 'lucide-react';
+import { Check, Loader2, Plus } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -182,7 +182,17 @@ export function CreateTicketDialog({ experienceId }: CreateTicketDialogProps) {
                 isLoading || !title.trim() || !description.trim() || !categoryId
               }
             >
-              {isLoading ? 'Creating...' : 'Create Ticket'}
+              {isLoading ? (
+                <div className='flex items-center gap-2'>
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                  Creating
+                </div>
+              ) : (
+                <div className='flex items-center gap-2'>
+                  <Check className='h-4 w-4' />
+                  Create Ticket
+                </div>
+              )}
             </Button>
           </DialogFooter>
         </form>

@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user has access to this experience
-    await verifyUser(experienceId);
+    const { companyId } = await verifyUser(experienceId);
 
     const categories = await prisma.category.findMany({
-      where: { experienceId },
+      where: { companyId },
       orderBy: { name: 'asc' },
     });
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user has admin access to this experience
-    const { accessLevel } = await verifyUser(experienceId);
+    const { accessLevel, companyId } = await verifyUser(experienceId);
 
     if (accessLevel !== 'admin') {
       return NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         name,
         description,
         color: color || '#3B82F6',
-        experienceId,
+        companyId,
       },
     });
 

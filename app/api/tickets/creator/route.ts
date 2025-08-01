@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
 
+// GET /api/tickets/creator?experienceId=...
 export async function GET(request: NextRequest) {
   try {
     const experienceId = request.nextUrl.searchParams.get('experienceId');
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user has access to this experience
-    const { accessLevel } = await verifyUser(experienceId);
+    const { accessLevel, companyId } = await verifyUser(experienceId);
 
     // Only admins (creators) can access this endpoint
     if (accessLevel !== 'admin') {
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const tickets = await prisma.ticket.findMany({
       where: {
-        experienceId: experienceId,
+        companyId: companyId,
         status: {
           in: ['OPEN', 'CLAIMED'],
         },
