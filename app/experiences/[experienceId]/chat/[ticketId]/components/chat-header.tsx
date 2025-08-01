@@ -25,7 +25,7 @@ const ChatHeader = ({
   const [isTicketInfoModalOpen, setIsTicketInfoModalOpen] = useState(false);
   return (
     <header className='w-full flex justify-between items-center p-4 border-b'>
-      <Link href={`/experiences/${experienceId}/customer`}>
+      <Link href={`/experiences/${experienceId}/customer?tab=TICKETS`}>
         <Button variant='ghost' size='sm'>
           <ArrowLeft className='h-4 w-4 mr-2' />
           Back to Dashboard

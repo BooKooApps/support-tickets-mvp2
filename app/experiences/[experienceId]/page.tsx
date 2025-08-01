@@ -103,5 +103,5 @@ export default async function HomePage({
     });
   }
 
-  redirect(`/experiences/${experienceId}/customer`);
+  redirect(`/experiences/${experienceId}/customer?tab=TICKETS`);
 }

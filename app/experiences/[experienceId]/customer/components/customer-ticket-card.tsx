@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getTimeAgo } from '@/lib/utils';
 import { MessageCircle, Clock, CheckCircle2, Loader2 } from 'lucide-react';
-import { ReviewDialog } from '../reviews/components/review-dialog';
+import { ReviewDialog } from './review-components/review-dialog';
 import type { TicketWithRelations } from './customer-tickets';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 

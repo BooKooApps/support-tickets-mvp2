@@ -16,7 +16,7 @@ const PermissionWall = ({ children, experienceId }: PermissionWallProps) => {
   useEffect(() => {
     if (!loading && !user) {
       // If not loading and no user (meaning not admin), redirect to customer page
-      router.push(`/experiences/${experienceId}/customer`);
+      router.push(`/experiences/${experienceId}/customer?tab=TICKETS`);
     }
   }, [user, loading, error, experienceId, router]);
 
