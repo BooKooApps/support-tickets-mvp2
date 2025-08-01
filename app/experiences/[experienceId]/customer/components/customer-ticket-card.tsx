@@ -37,7 +37,7 @@ export function CustomerTicketCard({
       );
       if (response.ok) {
         const data = await response.json();
-        if (data.shouldShowReviewDialog) {
+        if (data.shouldShowReviewDialog && accessLevel === 'customer') {
           setShowReviewDialog(true);
         }
       }
