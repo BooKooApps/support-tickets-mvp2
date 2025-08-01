@@ -202,12 +202,19 @@ const RenderHeader = ({
   if (accessLevel === 'admin') {
     return (
       <div className='flex justify-between items-start'>
-        <div className='flex items-center gap-2'>
-          <TicketIcon className='h-5 w-5 ' />
-          <h1 className='text-xl font-bold '>Open Tickets</h1>
+        <div className='flex items-center w-full justify-between'>
+          <div className='flex items-center gap-2'>
+            <TicketIcon className='h-5 w-5 ' />
+            <h1 className='text-xl font-bold '>Open Tickets</h1>
+            <span className='text-xs text-primary'>
+              {/* number of open tickets */}
+              {tickets.filter(ticket => ticket.status === 'OPEN').length} open
+            </span>
+          </div>
+
           {newTicketsCount > 0 && (
             <span
-              className='text-xs text-primary animate-pulse cursor-pointer'
+              className='text-sm text-primary animate-pulse cursor-pointer'
               onClick={handleClickNewTicketWarning}
             >
               {newTicketsCount} new tickets !

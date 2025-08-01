@@ -6,13 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getTimeAgo } from '@/lib/utils';
-import {
-  MessageCircle,
-  Clock,
-  User,
-  CheckCircle2,
-  Loader2,
-} from 'lucide-react';
+import { MessageCircle, Clock, CheckCircle2, Loader2 } from 'lucide-react';
 import { ReviewDialog } from './review-dialog';
 import type { TicketWithRelations } from './customer-tickets';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -73,26 +67,24 @@ export function CustomerTicketCard({
   const statusConfig = {
     OPEN: {
       color: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
-      icon: Clock,
       text: 'Waiting for support',
       dotColor: 'bg-red-500',
     },
     CLAIMED: {
-      color: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
-      icon: User,
+      // should be emerald
+      color:
+        'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
       text: 'Being handled',
-      dotColor: 'bg-amber-500',
+      dotColor: 'bg-emerald-500',
     },
     CLOSED: {
       color: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
-      icon: CheckCircle2,
       text: 'Resolved',
       dotColor: 'bg-green-500',
     },
   };
 
   const currentStatus = statusConfig[ticket.status];
-  const StatusIcon = currentStatus.icon;
 
   // Handler for clicking the card to go to chat
   const handleCardClick = () => {
@@ -158,7 +150,6 @@ export function CustomerTicketCard({
                   <div
                     className={`w-2 h-2 rounded-full ${currentStatus.dotColor}`}
                   />
-                  <StatusIcon className='h-3.5 w-3.5' />
                   {currentStatus.text}
                 </Badge>
               </div>
