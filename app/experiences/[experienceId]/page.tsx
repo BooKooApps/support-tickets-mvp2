@@ -103,8 +103,5 @@ export default async function HomePage({
     });
   }
 
-  // Redirect to customer page by default
-  if (accessLevel === 'admin') {
-    redirect(`/experiences/${experienceId}/customer`);
-  }
+  redirect(`/experiences/${experienceId}/customer`);
 }
