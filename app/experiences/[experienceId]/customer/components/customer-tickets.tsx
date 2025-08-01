@@ -8,6 +8,7 @@ import { Ticket, Category, Message } from '@prisma/client';
 import CustomerTicketList from './customer-ticket-list';
 import { EmptyTicketState } from '@/components/empty-ticket-state';
 import { ErrorTicketState } from '@/components/error-ticket-state';
+import { Button } from '@/components/ui/button';
 
 export type TicketWithRelations = Ticket & {
   category: Category;
@@ -43,19 +44,47 @@ export function CustomerTickets({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newTicketsCount, setNewTicketsCount] = useState(0);
+  const [currentView, setCurrentView] = useState<'open' | 'closed'>('open');
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchTickets = async () => {
+    setCurrentPage(1);
+    setTickets([]);
+    setTotalPages(1);
     try {
-      const url =
-        accessLevel === 'admin' ? '/api/tickets/creator' : '/api/tickets';
       setIsLoading(true);
       const response = await fetch(
-        `${url}?experienceId=${experienceId}&page=${currentPage}&limit=3`
+        `/api/tickets?experienceId=${experienceId}&page=${currentPage}&limit=3`
       );
 
       if (!response.ok) {
         throw new Error('Failed to fetch tickets');
+      }
+
+      const data = await response.json();
+      setTickets(data.tickets);
+      setTotalPages(data.totalPages);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchClosedTickets = async () => {
+    setCurrentPage(1);
+    setTickets([]);
+    setTotalPages(1);
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `/api/tickets/closed?experienceId=${experienceId}&page=${currentPage}&limit=3`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch closed tickets');
       }
 
       const data = await response.json();
@@ -155,8 +184,12 @@ export function CustomerTickets({
   };
 
   useEffect(() => {
-    fetchTickets();
-  }, [experienceId, currentPage]);
+    if (currentView === 'open') {
+      fetchTickets();
+    } else {
+      fetchClosedTickets();
+    }
+  }, [experienceId, currentPage, currentView]);
 
   if (error) {
     return <ErrorTicketState error={error} />;
@@ -173,6 +206,21 @@ export function CustomerTickets({
         setTickets,
         tickets,
       })}
+
+      <div className='w-full flex items-center gap-2'>
+        <Button
+          variant={currentView === 'open' ? 'default' : 'outline'}
+          onClick={() => setCurrentView('open')}
+        >
+          Open Tickets
+        </Button>
+        <Button
+          variant={currentView === 'closed' ? 'default' : 'outline'}
+          onClick={() => setCurrentView('closed')}
+        >
+          Closed Tickets
+        </Button>
+      </div>
 
       {isLoading && tickets.length === 0 ? (
         <div className='flex justify-center items-center h-full'>

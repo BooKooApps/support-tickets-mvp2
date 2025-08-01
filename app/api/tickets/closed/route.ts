@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
+import { Prisma } from '@prisma/client';
 
-// GET /api/tickets/creator?experienceId=...
+// GET /api/tickets/closed?experienceId=...
 export async function GET(request: NextRequest) {
   try {
     const experienceId = request.nextUrl.searchParams.get('experienceId');
@@ -17,29 +18,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { companyId, accessLevel } = await verifyUser(experienceId);
-
-    // Only admins (creators) can access this endpoint
-    if (accessLevel !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    // Verify user has access to this experience
+    const { userId, companyId, accessLevel } = await verifyUser(experienceId);
+    const isUserAdmin = accessLevel === 'admin';
+    const ticketsWhereClause: Prisma.TicketWhereInput = isUserAdmin
+      ? {
+          companyId,
+          status: {
+            in: ['CLOSED'],
+          },
+        }
+      : {
+          companyId,
+          creatorId: userId,
+          status: {
+            in: ['CLOSED'],
+          },
+        };
 
     // Get total count for pagination
     const totalTickets = await prisma.ticket.count({
-      where: {
-        companyId,
-      },
+      where: ticketsWhereClause,
     });
 
     const totalPages = Math.ceil(totalTickets / limit);
 
     const tickets = await prisma.ticket.findMany({
-      where: {
-        companyId: companyId,
-        status: {
-          in: ['OPEN', 'CLAIMED'],
-        },
-      },
+      where: ticketsWhereClause,
       include: {
         category: true,
         creator: {
@@ -58,7 +63,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: [
-        { status: 'asc' }, // OPEN first, then CLAIMED
+        { status: 'asc' }, // OPEN first
         { createdAt: 'desc' },
       ],
       skip: offset,
@@ -72,7 +77,7 @@ export async function GET(request: NextRequest) {
       totalTickets,
     });
   } catch (error) {
-    console.error('Error fetching creator tickets:', error);
+    console.error('Error fetching tickets:', error);
     return NextResponse.json(
       { error: 'Failed to fetch tickets' },
       { status: 500 }

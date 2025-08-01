@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
 import { whopSdk } from '@/lib/whop-api';
 import { TicketWithRelations } from '@/app/experiences/[experienceId]/customer/components/customer-tickets';
+import { Prisma } from '@prisma/client';
 
 // GET /api/tickets?experienceId=...
 export async function GET(request: NextRequest) {
@@ -20,23 +21,33 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user has access to this experience
-    const { userId, companyId } = await verifyUser(experienceId);
+    const { userId, companyId, accessLevel } = await verifyUser(experienceId);
+    const isUserAdmin = accessLevel === 'admin';
+
+    const ticketsWhereClause: Prisma.TicketWhereInput = isUserAdmin
+      ? {
+          companyId,
+          status: {
+            in: ['OPEN', 'CLAIMED'],
+          },
+        }
+      : {
+          companyId,
+          creatorId: userId,
+          status: {
+            in: ['OPEN', 'CLAIMED'],
+          },
+        };
 
     // Get total count for pagination
     const totalTickets = await prisma.ticket.count({
-      where: {
-        companyId,
-        creatorId: userId,
-      },
+      where: ticketsWhereClause,
     });
 
     const totalPages = Math.ceil(totalTickets / limit);
 
     const tickets = await prisma.ticket.findMany({
-      where: {
-        companyId,
-        creatorId: userId,
-      },
+      where: ticketsWhereClause,
       include: {
         category: true,
         creator: {
@@ -151,6 +162,28 @@ export async function POST(request: NextRequest) {
         'NEW_TICKET'
       );
     }
+
+    await whopSdk.notifications.sendPushNotification({
+      // The ID of the company team to send the notification to
+      companyTeamId: companyId,
+      // The content of the notification
+      content: `New ticket from ${fullTicket?.creator.username}`,
+      // The ID of the experience to send the notification to
+      experienceId: experienceId,
+      // An external ID for the notification
+      externalId: ticket.id,
+      // Whether the notification is a mention
+      isMention: true,
+      // The rest path to append to the generated deep link that opens your app. Use
+      // [restPath] in your app path in the dashboard to read this parameter.
+      restPath: `/customer?tab=TICKETS`,
+      // The ID of the user sending the notification
+      senderUserId: userId,
+      // The subtitle of the notification
+      subtitle: 'New ticket created',
+      // The title of the notification
+      title: 'New ticket created',
+    });
 
     return NextResponse.json(
       {
