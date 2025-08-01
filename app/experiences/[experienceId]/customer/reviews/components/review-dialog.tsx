@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -15,13 +15,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Check, Loader2, Star } from 'lucide-react';
+import { ReviewResponse } from '@/app/api/reviews/route';
 
 interface ReviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  ticketId: string;
-  ticketTitle: string;
+  ticketId?: string;
+  ticketTitle?: string;
   onReviewSubmitted?: () => void;
+  review?: ReviewResponse;
 }
 
 export function ReviewDialog({
@@ -30,6 +32,7 @@ export function ReviewDialog({
   ticketId,
   ticketTitle,
   onReviewSubmitted,
+  review,
 }: ReviewDialogProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
@@ -38,20 +41,30 @@ export function ReviewDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (rating === 0) return;
 
     setIsLoading(true);
     try {
+      const method = review ? 'PUT' : 'POST';
+      const body = review
+        ? {
+            reviewId: review.id,
+            rating,
+            feedback: feedback.trim() || null,
+          }
+        : {
+            ticketId,
+            rating,
+            feedback: feedback.trim() || null,
+          };
+
       const response = await fetch('/api/reviews', {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ticketId,
-          rating,
-          feedback: feedback.trim() || null,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (response.ok) {
@@ -66,14 +79,25 @@ export function ReviewDialog({
     }
   };
 
+  useEffect(() => {
+    if (review) {
+      setRating(review.rating);
+      setFeedback(review.feedback || '');
+    }
+  }, [review]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle>Rate Your Support Experience</DialogTitle>
-          <DialogDescription>
-            How was your experience with "{ticketTitle}"?
-          </DialogDescription>
+          {ticketTitle && (
+            <DialogDescription>
+              How was your experience with "{ticketTitle}"?
+            </DialogDescription>
+          )}
+
+          {review && <DialogDescription>Edit your review</DialogDescription>}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className='space-y-6'>

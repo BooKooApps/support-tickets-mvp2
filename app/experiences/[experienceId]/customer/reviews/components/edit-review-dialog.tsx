@@ -15,18 +15,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Star } from 'lucide-react';
+import { ReviewResponse } from '@/app/api/reviews/route';
 
 interface EditReviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  review: {
-    id: string;
-    rating: number;
-    feedback?: string;
-    ticket: {
-      title: string;
-    };
-  } | null;
+  review: ReviewResponse | null;
   onReviewUpdated?: () => void;
 }
 
@@ -90,7 +84,7 @@ export function EditReviewDialog({
         <DialogHeader>
           <DialogTitle>Edit Your Review</DialogTitle>
           <DialogDescription>
-            Update your rating and feedback for "{review.ticket.title}"
+            Update your rating and feedback for "{review.user.username}"
           </DialogDescription>
         </DialogHeader>
 

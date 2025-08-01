@@ -2,6 +2,12 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
 
+import type { Review as PrismaReview, User } from '@prisma/client';
+
+export type ReviewResponse = PrismaReview & {
+  user: User;
+};
+
 // api/reviews?experienceId=123&userOnly=true
 export async function GET(request: NextRequest) {
   try {
@@ -17,10 +23,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user has access to this experience
-    const { userId } = await verifyUser(experienceId);
+    const { userId, companyId } = await verifyUser(experienceId);
 
     const whereClause: any = {
-      experienceId,
+      companyId,
     };
 
     // If userOnly is true, filter by the current user's reviews
@@ -38,7 +44,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(reviews);
+    return NextResponse.json(reviews as ReviewResponse[]);
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return NextResponse.json(
