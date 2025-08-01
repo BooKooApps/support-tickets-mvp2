@@ -94,6 +94,12 @@ export async function POST(request: NextRequest) {
     const experienceId = request.nextUrl.searchParams.get('experienceId') || '';
     const { userId, companyId } = await verifyUser(experienceId);
 
+    const company = await prisma.company.findUnique({
+      where: {
+        id: companyId,
+      },
+    });
+
     const ticket = await prisma.ticket.create({
       data: {
         title,
@@ -163,11 +169,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const adminUserIds = await prisma.userRole.findMany({
+      where: {
+        companyId,
+        role: 'admin',
+      },
+    });
+
     await whopSdk.notifications.sendPushNotification({
       // The ID of the company team to send the notification to
-      companyTeamId: companyId,
+      // companyTeamId: companyId,
+      // The subtitle of the notification
+      subtitle: `${company?.title} [Better Support Tickets]`,
+      // The title of the notification
+      title: '[NEW TICKET WAS CREATED 🚨]',
       // The content of the notification
-      content: `New ticket from ${fullTicket?.creator.username}`,
+      content: `${fullTicket?.creator.username} created a new [${fullTicket?.category.name}] ticket`,
       // The ID of the experience to send the notification to
       experienceId: experienceId,
       // An external ID for the notification
@@ -179,10 +196,8 @@ export async function POST(request: NextRequest) {
       restPath: `/customer?tab=TICKETS`,
       // The ID of the user sending the notification
       senderUserId: userId,
-      // The subtitle of the notification
-      subtitle: 'New ticket created',
-      // The title of the notification
-      title: 'New ticket created',
+      // The IDs of the users to send the notification to
+      userIds: adminUserIds.map((user) => user.userId),
     });
 
     return NextResponse.json(

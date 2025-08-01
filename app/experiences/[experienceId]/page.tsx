@@ -1,6 +1,7 @@
 import { verifyUser } from '@/lib/authentication';
 import { prisma } from '@/lib/prisma';
 import { whopSdk } from '@/lib/whop-api';
+import { User } from '@prisma/client';
 import { redirect } from 'next/navigation';
 
 export default async function HomePage({
@@ -103,5 +104,80 @@ export default async function HomePage({
     });
   }
 
+  let userRole = await prisma.userRole.findFirst({
+    where: {
+      userId: user.id,
+      companyId: company.id,
+    },
+  });
+
+  if (!userRole) {
+    userRole = await prisma.userRole.create({
+      data: {
+        userId: user.id,
+        companyId: company.id,
+        role: accessLevel,
+      },
+    });
+  }
+
+  if (userRole.role !== accessLevel) {
+    await prisma.userRole.update({
+      where: {
+        id: userRole.id,
+      },
+      data: {
+        role: accessLevel,
+      },
+    });
+  }
+
+  await updateUserInfo(user, whop_user as any);
+
   redirect(`/experiences/${experienceId}/customer?tab=TICKETS`);
 }
+
+const updateUserInfo = async (
+  user: User,
+  whopUser: {
+    id: string;
+    name: string;
+    username: string;
+    profilePicture: {
+      sourceUrl: string;
+    };
+  }
+) => {
+  if (user.avatarUrl !== whopUser.profilePicture?.sourceUrl) {
+    await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        avatarUrl: whopUser.profilePicture?.sourceUrl,
+      },
+    });
+  }
+
+  if (user.name !== whopUser.name) {
+    await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        name: whopUser.name,
+      },
+    });
+  }
+
+  if (user.username !== whopUser.username) {
+    await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        username: whopUser.username,
+      },
+    });
+  }
+};

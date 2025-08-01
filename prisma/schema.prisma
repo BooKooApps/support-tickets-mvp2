@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -38,6 +38,7 @@ model Company {
   tickets    Ticket[]
   reviews    Review[]
   agents     Agent[]
+  UserRole   UserRole[]
 }
 
 // User is the Whop Community User
@@ -52,6 +53,7 @@ model User {
   tickets   Ticket[]
   Message   Message[]
   Review    Review[]
+  UserRole  UserRole[]
 
   @@map("users")
 }
@@ -131,6 +133,18 @@ model Review {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
+}
+
+model UserRole {
+  id        String @id @default(cuid())
+  userId    String
+  companyId String
+  role      String
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_roles")
 }
 
 enum TicketStatus {
