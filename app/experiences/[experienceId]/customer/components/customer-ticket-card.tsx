@@ -115,7 +115,12 @@ export function CustomerTicketCard({
                 </h3>
                 {/* Category */}
 
-                <Badge className='border-0 font-medium px-3 py-1'>
+                <Badge
+                  style={{
+                    backgroundColor: ticket.category.color,
+                  }}
+                  className={`border-0 font-medium px-3 py-1`}
+                >
                   {ticket.category.name}
                 </Badge>
               </div>

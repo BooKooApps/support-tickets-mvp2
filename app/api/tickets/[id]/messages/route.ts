@@ -3,11 +3,28 @@ import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
 import { whopSdk } from '@/lib/whop-api';
 
+// Define a type for the message with agent and user included
+export type MessageWithAgentAndUser = Awaited<
+  ReturnType<typeof prisma.message.findFirst>
+> & {
+  user: Awaited<ReturnType<typeof prisma.user.findFirst>> | null;
+  agent: Awaited<ReturnType<typeof prisma.agent.findFirst>> | null;
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: ticketId } = await params;
+  const { searchParams } = new URL(request.url);
+  const experienceId = searchParams.get('experienceId');
+
+  if (!experienceId) {
+    return NextResponse.json(
+      { error: 'Experience ID is required' },
+      { status: 400 }
+    );
+  }
 
   try {
     // Get the ticket to verify access
@@ -20,9 +37,7 @@ export async function GET(
     }
 
     // Verify user has access to this experience
-    const { userId, username, accessLevel } = await verifyUser(
-      ticket.experienceId
-    );
+    const { userId, accessLevel } = await verifyUser(experienceId);
 
     // Check if user is admin or the ticket creator
     const isAdmin = accessLevel === 'admin';
@@ -32,22 +47,16 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const messages = await prisma.message.findMany({
+    const messages: MessageWithAgentAndUser[] = await prisma.message.findMany({
       where: { ticketId: ticketId },
       orderBy: { createdAt: 'asc' },
+      include: {
+        user: true,
+        agent: true,
+      },
     });
 
-    // Transform messages to include sender info
-    const messagesWithSender = messages.map(message => ({
-      ...message,
-      sender: {
-        id: message.senderId,
-        name: message.username || 'Unknown User',
-        role: message.senderId === ticket.creatorId ? 'USER' : 'CREATOR',
-      },
-    }));
-
-    return NextResponse.json(messagesWithSender);
+    return NextResponse.json(messages);
   } catch (error) {
     console.error('Error fetching messages:', error);
     return NextResponse.json(

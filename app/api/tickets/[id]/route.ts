@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyUser } from '@/lib/authentication';
 
 export async function GET(
   request: NextRequest,
@@ -25,9 +24,6 @@ export async function GET(
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
-
-    // Verify user has access to this ticket
-    await verifyUser(ticket.experienceId);
 
     return NextResponse.json(ticket);
   } catch (error) {

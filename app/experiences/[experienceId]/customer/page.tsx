@@ -12,7 +12,7 @@ export default async function CustomerPortalPage({
   return (
     <div className='space-y-6'>
       <CustomerTickets
-        accessLevel='customer'
+        accessLevel={accessLevel}
         experienceId={experienceId}
         companyId={companyId}
       />
