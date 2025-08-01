@@ -12,6 +12,7 @@ export const verifyUser = cache(
   ): Promise<{
     userId: string;
     username: string;
+    companyId: string;
     accessLevel: 'admin' | 'customer';
   }> => {
     const headersList = await headers();
@@ -21,6 +22,12 @@ export const verifyUser = cache(
     const { username } = await whopSdk.users.getUser({
       userId,
     });
+
+    const experience = await whopSdk.experiences.getExperience({
+      experienceId,
+    });
+
+    const companyId = experience.company.id;
 
     const hasAccessToExperience =
       await whopSdk.access.checkIfUserHasAccessToExperience({
@@ -42,6 +49,7 @@ export const verifyUser = cache(
     return {
       userId,
       username,
+      companyId,
       accessLevel: hasAccessToExperience.accessLevel,
     };
   }

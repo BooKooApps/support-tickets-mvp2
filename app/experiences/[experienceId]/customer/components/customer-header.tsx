@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { Ticket, Star, Settings } from 'lucide-react';
+import { Ticket, Star, Trophy, Settings2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
@@ -11,7 +11,7 @@ const CustomerHeader = ({
   accessLevel,
 }: {
   experienceId: string;
-  accessLevel: string;
+  accessLevel: 'admin' | 'customer';
 }) => {
   const pathName = usePathname();
 
@@ -30,7 +30,7 @@ const CustomerHeader = ({
               className='flex items-center gap-2 px-3 py-2 text-sm font-medium'
             >
               <Ticket className='h-4 w-4' />
-              Your Tickets
+              {accessLevel === 'admin' ? 'All Tickets' : 'Your Tickets'}
             </Button>
           </Link>
           <Link href={`/experiences/${experienceId}/customer/reviews`}>
@@ -49,20 +49,40 @@ const CustomerHeader = ({
               Current Whop Reviews
             </Button>
           </Link>
+          <Link href={`/experiences/${experienceId}/customer/whop-leadboard`}>
+            <Button
+              variant={
+                pathName ===
+                `/experiences/${experienceId}/customer/whop-leadboard`
+                  ? 'default'
+                  : 'ghost'
+              }
+              className='flex items-center gap-2 px-3 py-2 text-sm font-medium'
+            >
+              <Trophy className='h-4 w-4' />
+              General Whop Leadboard
+            </Button>
+          </Link>
+          {accessLevel === 'admin' && (
+            <Link href={`/experiences/${experienceId}/customer/settings`}>
+              <Button
+                variant={
+                  pathName === `/experiences/${experienceId}/customer/settings`
+                    ? 'default'
+                    : 'ghost'
+                }
+                className='flex items-center gap-2 px-3 py-2 text-sm font-medium'
+              >
+                <Settings2 className='h-4 w-4' />
+                Admin Settings
+              </Button>
+            </Link>
+          )}
         </div>
         <div className='flex items-center gap-2'>
           <div>
             <ThemeToggle />
           </div>
-          {accessLevel === 'admin' && (
-            <Link
-              href={`/experiences/${experienceId}/creator`}
-              className='flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted'
-            >
-              <Settings className='h-4 w-4' />
-              Admin Dashboard
-            </Link>
-          )}
         </div>
       </div>
     </header>

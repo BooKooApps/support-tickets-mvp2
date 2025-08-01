@@ -6,30 +6,22 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getTimeAgo } from '@/lib/utils';
-import { MessageCircle, Clock } from 'lucide-react';
-import { ReviewDialog } from './review-dialog';
-import { Ticket, Category } from '@prisma/client';
+import { MessageCircle, Clock, CheckCircle2, Loader2 } from 'lucide-react';
+import { ReviewDialog } from '../reviews/components/review-dialog';
+import type { TicketWithRelations } from './customer-tickets';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-type TicketWithRelations = Ticket & {
-  category: Category;
-  messages: Array<{
-    id: string;
-    content: string;
-    createdAt: Date;
-    updatedAt: Date;
-    ticketId: string;
-    senderId: string;
-  }>;
-  _count: {
-    messages: number;
-  };
-};
-
-interface CustomerTicketCardProps {
+export function CustomerTicketCard({
+  ticket,
+  accessLevel,
+  experienceId,
+  setTickets,
+}: {
   ticket: TicketWithRelations;
-}
-
-export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
+  experienceId: string;
+  setTickets: React.Dispatch<React.SetStateAction<TicketWithRelations[]>>;
+  accessLevel: 'customer' | 'admin';
+}) {
   const router = useRouter();
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,11 +29,17 @@ export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
   const handleClose = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/tickets/${ticket.id}/close`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `/api/tickets/${ticket.id}/close?experienceId=${experienceId}`,
+        {
+          method: 'POST',
+        }
+      );
       if (response.ok) {
-        setShowReviewDialog(true);
+        const data = await response.json();
+        if (data.shouldShowReviewDialog) {
+          setShowReviewDialog(true);
+        }
       }
     } catch (error) {
       console.error('Failed to close ticket:', error);
@@ -50,88 +48,145 @@ export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
     }
   };
 
-  const statusColor = {
-    OPEN: 'bg-red-100 text-red-800',
-    CLAIMED: 'bg-yellow-100 text-yellow-800',
-    CLOSED: 'bg-green-100 text-green-800',
+  const handleClaim = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `/api/tickets/${ticket.id}/claim?experienceId=${experienceId}`,
+        {
+          method: 'POST',
+        }
+      );
+    } catch (error) {
+      console.error('Failed to claim ticket:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const statusText = {
-    OPEN: 'Waiting for support',
-    CLAIMED: 'Being handled',
-    CLOSED: 'Resolved',
+  const statusConfig = {
+    OPEN: {
+      color: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
+      text: 'Waiting for support',
+      dotColor: 'bg-red-500',
+    },
+    CLAIMED: {
+      // should be emerald
+      color:
+        'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+      text: 'Being handled',
+      dotColor: 'bg-emerald-500',
+    },
+    CLOSED: {
+      color: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
+      text: 'Resolved',
+      dotColor: 'bg-green-500',
+    },
+  };
+
+  const currentStatus = statusConfig[ticket.status];
+
+  // Handler for clicking the card to go to chat
+  const handleCardClick = () => {
+    router.push(`/experiences/${experienceId}/chat/${ticket.id}`);
   };
 
   return (
     <>
-      <Card className='hover:shadow-md transition-shadow'>
-        <CardHeader>
-          <div className='flex items-start justify-between'>
-            <div className='space-y-2'>
-              <div className='flex items-center gap-2'>
-                <h3 className='font-semibold text-lg'>{ticket.title}</h3>
-                <Badge className={statusColor[ticket.status]}>
-                  {statusText[ticket.status]}
+      <Card
+        className='group hover:shadow-lg hover:scale-[1.01] dark:hover:shadow-primary/10 dark:shadow-xl hover:border-primary transition-all duration-200   cursor-pointer'
+        onClick={handleCardClick}
+        tabIndex={0}
+        role='button'
+        aria-label={`View chat for ticket ${ticket.title}`}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            handleCardClick();
+          }
+        }}
+      >
+        <CardHeader className='pb-4'>
+          <div className='flex items-start justify-between gap-4'>
+            <div className='flex-1 space-y-3'>
+              {/* Title and Status */}
+              <div className='flex items-start gap-3'>
+                <h3 className='font-semibold text-lg  leading-tight mb-2'>
+                  {ticket.title}
+                </h3>
+                {/* Category */}
+
+                <Badge
+                  style={{
+                    backgroundColor: ticket.category.color,
+                  }}
+                  className={`border-0 font-medium px-3 py-1`}
+                >
+                  {ticket.category.name}
                 </Badge>
               </div>
-              <div className='flex items-center gap-4 text-sm text-gray-500'>
-                <div className='flex items-center gap-1'>
+
+              {/* User and Metadata */}
+              <div className='flex items-center gap-6 text-sm'>
+                <div className='flex items-center gap-2'>
+                  <Avatar className='h-7 w-7'>
+                    <AvatarImage src={ticket.creator.avatarUrl || ''} />
+                    <AvatarFallback className='text-xs '>
+                      {ticket.creator.username?.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className='font-medium '>
+                    {ticket.creator.username}
+                  </span>
+                </div>
+
+                <div className='flex items-center gap-1 text-muted-foreground'>
                   <Clock className='h-4 w-4' />
-                  {getTimeAgo(new Date(ticket.createdAt))}
+                  <span>{getTimeAgo(new Date(ticket.createdAt))}</span>
                 </div>
-                <div className='flex items-center gap-1'>
+
+                <div className='flex items-center gap-1 text-muted-foreground'>
                   <MessageCircle className='h-4 w-4' />
-                  {ticket._count.messages} messages
+                  <span className='font-medium'>{ticket._count.messages}</span>
+                  <span>messages</span>
                 </div>
-                {ticket.agentId && (
-                  <div className='text-green-600'>
-                    Assigned to Support Agent
-                  </div>
-                )}
+                <Badge
+                  className={`${currentStatus.color} border font-medium px-3 py-1 flex items-center gap-1.5 w-fit`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full ${currentStatus.dotColor}`}
+                  />
+                  {currentStatus.text}
+                </Badge>
               </div>
             </div>
 
-            <div className='flex items-center gap-2'>
-              {ticket.status !== 'CLOSED' && (
-                <Button
-                  size='sm'
-                  variant='outline'
-                  onClick={handleClose}
-                  disabled={isLoading}
-                >
-                  Close Ticket
-                </Button>
-              )}
-              <Button
-                size='sm'
-                variant='ghost'
-                onClick={() =>
-                  router.push(
-                    `/experiences/${ticket.experienceId}/chat/${ticket.id}`
-                  )
-                }
-              >
-                View Chat
-              </Button>
+            {/* Action Buttons */}
+            <div
+              className={
+                ticket.status === 'OPEN' && accessLevel === 'admin'
+                  ? 'flex items-center gap-2'
+                  : 'flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity'
+              }
+              // Prevent card click when clicking on buttons
+              onClick={e => e.stopPropagation()}
+            >
+              <RenderActionButtons
+                ticket={ticket}
+                accessLevel={accessLevel}
+                isLoading={isLoading}
+                handleClose={handleClose}
+                handleClaim={handleClaim}
+              />
             </div>
           </div>
         </CardHeader>
 
-        <CardContent>
-          <div className='space-y-4'>
-            <div>
-              <Badge
-                variant='outline'
-                className='mb-2'
-                style={{
-                  backgroundColor: ticket.category.color + '20',
-                  color: ticket.category.color,
-                }}
-              >
-                {ticket.category.name}
-              </Badge>
-              <p className='text-gray-600'>{ticket.description}</p>
-            </div>
+        <CardContent className='pt-0'>
+          <div className='space-y-3'>
+            {/* Description */}
+            <p className='text-muted-foreground leading-relaxed line-clamp-2'>
+              {ticket.description}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -145,3 +200,73 @@ export function CustomerTicketCard({ ticket }: CustomerTicketCardProps) {
     </>
   );
 }
+
+const RenderActionButtons = ({
+  ticket,
+  accessLevel,
+  isLoading,
+  handleClose,
+  handleClaim,
+}: {
+  ticket: TicketWithRelations;
+  accessLevel: 'customer' | 'admin';
+  isLoading: boolean;
+  handleClose: () => void;
+  handleClaim: () => void;
+}) => {
+  if (accessLevel === 'admin') {
+    if (ticket.status === 'OPEN') {
+      return (
+        <Button
+          size='sm'
+          className='animate-pulse'
+          onClick={handleClaim}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <CheckCircle2 className='h-4 w-4 mr-1' />
+          )}
+          Claim Ticket
+        </Button>
+      );
+    }
+
+    if (ticket.status === 'CLAIMED') {
+      return (
+        <Button
+          size='sm'
+          variant='outline'
+          onClick={handleClose}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <CheckCircle2 className='h-4 w-4 mr-1' />
+          )}
+          Close
+        </Button>
+      );
+    }
+  }
+
+  if (ticket.status !== 'CLOSED') {
+    return (
+      <Button
+        size='sm'
+        variant='outline'
+        onClick={handleClose}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <Loader2 className='h-4 w-4 animate-spin' />
+        ) : (
+          <CheckCircle2 className='h-4 w-4 mr-1' />
+        )}
+        Close
+      </Button>
+    );
+  }
+};

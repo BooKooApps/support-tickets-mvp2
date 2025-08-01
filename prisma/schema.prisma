@@ -6,36 +6,66 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-model Settings {
-  id              String   @id @default(cuid())
-  experienceId    String // Whop experience/community ID
-  userId          String // External user ID from Whop
-  agentName       String   @default("Support Agent")
-  welcomeMessage  String   @default("Thank you for contacting support. How can we help you today?")
-  autoMessage     String   @default("We've received your ticket and will respond shortly.")
-  reminderMessage String   @default("Hi! Just checking in on your support ticket. Do you need any additional help?")
-  reminderEnabled Boolean  @default(true)
-  reminderHours   Int      @default(12)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+model Agent {
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentName       String    @default("Support Agent")
+  welcomeMessage  String    @default("Thank you for contacting support. How can we help you today?")
+  autoMessage     String    @default("We've received your ticket and will respond shortly.")
+  reminderMessage String    @default("Hi! Just checking in on your support ticket. Do you need any additional help?")
+  reminderEnabled Boolean   @default(true)
+  reminderHours   Int       @default(12)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  Message         Message[]
 
-  @@unique([experienceId, userId])
-  @@map("settings")
+  @@map("agents")
 }
 
+// Company is the Whop Community Server
+model Company {
+  id         String     @id
+  title      String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  categories Category[]
+  tickets    Ticket[]
+  reviews    Review[]
+  agents     Agent[]
+}
+
+// User is the Whop Community User
+model User {
+  id String @id @default(cuid())
+
+  name      String?
+  username  String
+  email     String?
+  avatarUrl String?
+  createdAt DateTime
+  tickets   Ticket[]
+  Message   Message[]
+  Review    Review[]
+
+  @@map("users")
+}
+
+// One Company can have many Categories
 model Category {
-  id           String   @id @default(cuid())
-  name         String
-  description  String?
-  color        String   @default("#3B82F6")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  experienceId String // Whop experience/community ID
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  color       String   @default("#3B82F6")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
   tickets Ticket[]
@@ -43,60 +73,62 @@ model Category {
   @@map("categories")
 }
 
+// One Company can have many Tickets
 model Ticket {
-  id                String       @id @default(cuid())
-  experienceId      String // Whop experience/community ID
-  title             String
-  description       String
-  status            TicketStatus @default(OPEN)
-  priority          Priority     @default(MEDIUM)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  claimedById       String?
-  claimedByUsername String?
-  claimedAt         DateTime?
-  closedAt          DateTime?
+  id          String       @id @default(cuid())
+  companyId   String
+  title       String
+  description String
+  status      TicketStatus @default(OPEN)
+  priority    Priority     @default(MEDIUM)
+  // Add creatorId to reference the user who created the ticket
+  creatorId   String
+  categoryId  String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  claimedAt DateTime?
+  closedAt  DateTime?
 
   // Relations - using external user IDs from Whop
-  creatorId  String     // External user ID from Whop
-  username   String
-  agentId    String? // External user ID from Whop (admin users)
-  categoryId String
-  category   Category  @relation(fields: [categoryId], references: [id])
-  messages   Message[]
-  review     Review?
+  creator  User      @relation(fields: [creatorId], references: [id])
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category Category  @relation(fields: [categoryId], references: [id])
+  messages Message[]
 
   @@map("tickets")
 }
 
+// One Ticket can have many Messages
 model Message {
   id        String   @id @default(cuid())
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  userId    String?
+  agentId   String?
+  ticketId  String
 
-  // Relations
-  ticketId String
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  senderId String // External user ID from Whop
-  username String // External user name from Whop
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  agent  Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
 
   @@map("messages")
 }
 
+// One Company can have many Reviews
 model Review {
-  id           String   @id @default(cuid())
-  rating       Int // 1-5 stars
-  feedback     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  experienceId String // Whop experience/community ID
+  id        String   @id @default(cuid())
+  rating    Int // 1-5 stars
+  feedback  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  companyId String
+  userId    String // External user ID from Whop
 
   // Relations
-  ticketId String @unique
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  username String // External user name from Whop
-  userId   String // External user ID from Whop
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
 }

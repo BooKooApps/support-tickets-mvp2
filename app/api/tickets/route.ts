@@ -2,7 +2,9 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
 import { whopSdk } from '@/lib/whop-api';
+import { TicketWithRelations } from '@/app/experiences/[experienceId]/customer/components/customer-tickets';
 
+// GET /api/tickets?experienceId=...
 export async function GET(request: NextRequest) {
   try {
     const experienceId = request.nextUrl.searchParams.get('experienceId');
@@ -18,12 +20,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user has access to this experience
-    const { userId } = await verifyUser(experienceId);
+    const { userId, companyId } = await verifyUser(experienceId);
 
     // Get total count for pagination
     const totalTickets = await prisma.ticket.count({
       where: {
-        experienceId,
+        companyId,
         creatorId: userId,
       },
     });
@@ -32,11 +34,18 @@ export async function GET(request: NextRequest) {
 
     const tickets = await prisma.ticket.findMany({
       where: {
-        experienceId,
+        companyId,
         creatorId: userId,
       },
       include: {
         category: true,
+        creator: {
+          select: {
+            username: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
         messages: {
           orderBy: { createdAt: 'desc' },
           take: 1,
@@ -72,26 +81,42 @@ export async function POST(request: NextRequest) {
   try {
     const { title, description, categoryId } = await request.json();
     const experienceId = request.nextUrl.searchParams.get('experienceId') || '';
-    const { userId, username } = await verifyUser(experienceId);
+    const { userId, companyId } = await verifyUser(experienceId);
 
     const ticket = await prisma.ticket.create({
       data: {
         title,
         description,
         creatorId: userId,
-        username: username,
         categoryId,
-        experienceId,
+        companyId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     });
 
-    // Create initial message
+    // Fetch the agent from the company
+    const agent = await prisma.agent.findFirst({
+      where: {
+        companyId,
+      },
+    });
+
+    if (!agent) {
+      return NextResponse.json(
+        { error: 'No agent found for this company' },
+        { status: 404 }
+      );
+    }
+
+    // Create initial message from the agent
     await prisma.message.create({
       data: {
-        content: description,
+        content: agent.autoMessage,
         ticketId: ticket.id,
-        senderId: userId,
-        username: username,
+        agentId: agent.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     });
 
@@ -100,6 +125,13 @@ export async function POST(request: NextRequest) {
       where: { id: ticket.id },
       include: {
         category: true,
+        creator: {
+          select: {
+            username: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
         messages: {
           orderBy: { createdAt: 'desc' },
           take: 1,
@@ -111,9 +143,22 @@ export async function POST(request: NextRequest) {
     });
 
     // Send WebSocket notification for new ticket
-    await sendTicketToWebsocket(fullTicket, experienceId);
+    if (fullTicket) {
+      await sendTicketToWebsocket(
+        fullTicket,
+        experienceId,
+        companyId,
+        'NEW_TICKET'
+      );
+    }
 
-    return NextResponse.json(ticket);
+    return NextResponse.json(
+      {
+        message: 'Ticket created successfully',
+        ticket: fullTicket,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error creating ticket:', error);
     return NextResponse.json(
@@ -123,7 +168,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-const sendTicketToWebsocket = async (ticket: any, experienceId: string) => {
+export const sendTicketToWebsocket = async (
+  ticket: TicketWithRelations,
+  experienceId: string,
+  companyId: string,
+  type: 'NEW_TICKET' | 'TICKET_CLAIMED' | 'TICKET_CLOSED'
+) => {
   if (!experienceId) {
     console.error(
       'Experience ID is not set - websocket ticket notification not sent'
@@ -134,7 +184,8 @@ const sendTicketToWebsocket = async (ticket: any, experienceId: string) => {
   try {
     // Send websocket message for new ticket
     const websocketMessage = {
-      type: 'NEW_TICKET',
+      type,
+      companyId,
       data: ticket,
     };
 

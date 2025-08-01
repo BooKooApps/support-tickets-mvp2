@@ -2,12 +2,28 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
 import { whopSdk } from '@/lib/whop-api';
+import { Message as PrismaMessage, User, Agent } from '@prisma/client';
+
+// Define a type for the message with agent and user included
+export type MessageWithRelations = PrismaMessage & {
+  user: User | null;
+  agent: Agent | null;
+};
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: ticketId } = await params;
+  const { searchParams } = new URL(request.url);
+  const experienceId = searchParams.get('experienceId');
+
+  if (!experienceId) {
+    return NextResponse.json(
+      { error: 'Experience ID is required' },
+      { status: 400 }
+    );
+  }
 
   try {
     // Get the ticket to verify access
@@ -20,9 +36,7 @@ export async function GET(
     }
 
     // Verify user has access to this experience
-    const { userId, username, accessLevel } = await verifyUser(
-      ticket.experienceId
-    );
+    const { userId, accessLevel } = await verifyUser(experienceId);
 
     // Check if user is admin or the ticket creator
     const isAdmin = accessLevel === 'admin';
@@ -32,22 +46,16 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const messages = await prisma.message.findMany({
+    const messages: MessageWithRelations[] = await prisma.message.findMany({
       where: { ticketId: ticketId },
       orderBy: { createdAt: 'asc' },
+      include: {
+        user: true,
+        agent: true,
+      },
     });
 
-    // Transform messages to include sender info
-    const messagesWithSender = messages.map(message => ({
-      ...message,
-      sender: {
-        id: message.senderId,
-        name: message.username || 'Unknown User',
-        role: message.senderId === ticket.creatorId ? 'USER' : 'CREATOR',
-      },
-    }));
-
-    return NextResponse.json(messagesWithSender);
+    return NextResponse.json(messages);
   } catch (error) {
     console.error('Error fetching messages:', error);
     return NextResponse.json(
@@ -62,6 +70,15 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: ticketId } = await params;
+  const { searchParams } = new URL(request.url);
+  const experienceId = searchParams.get('experienceId');
+
+  if (!experienceId) {
+    return NextResponse.json(
+      { error: 'Experience ID is required' },
+      { status: 400 }
+    );
+  }
 
   try {
     // Get the ticket to verify access
@@ -74,9 +91,7 @@ export async function POST(
     }
 
     // Verify user has access to this experience
-    const { userId, username, accessLevel } = await verifyUser(
-      ticket.experienceId
-    );
+    const { userId, accessLevel, companyId } = await verifyUser(experienceId);
 
     // Check if user is admin or the ticket creator
     const isAdmin = accessLevel === 'admin';
@@ -88,32 +103,33 @@ export async function POST(
 
     const { content } = await request.json();
 
-    const message = await prisma.message.create({
+    const full_new_message = await prisma.message.create({
       data: {
         content,
         ticketId: ticketId,
-        senderId: userId,
-        username: username,
+        userId: userId,
+      },
+      include: {
+        user: true,
+        agent: true,
       },
     });
 
-    // Transform message to include sender info
-    const messageWithSender = {
-      ...message,
-      sender: {
-        id: message.senderId,
-        name: message.username || 'Unknown User',
-        role: message.senderId === ticket.creatorId ? 'USER' : 'CREATOR',
-      },
-    };
-
-    await sendMessageToWebsocket(
-      messageWithSender,
+    await sendMessageToWebsocket({
+      message: full_new_message,
       ticketId,
-      ticket.experienceId
-    );
+      experienceId,
+      companyId,
+      type: 'NEW_MESSAGE',
+    });
 
-    return NextResponse.json(messageWithSender);
+    return NextResponse.json(
+      {
+        message: 'Message created successfully',
+        data: full_new_message,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error creating message:', error);
     return NextResponse.json(
@@ -122,11 +138,25 @@ export async function POST(
     );
   }
 }
-const sendMessageToWebsocket = async (
-  message: any,
-  ticketId: string,
-  experienceId: string
-) => {
+
+export const sendMessageToWebsocket = async ({
+  message,
+  ticketId,
+  experienceId,
+  companyId,
+  type,
+}: {
+  message: MessageWithRelations | { username: string; userId: string }; //can be the typing username
+  ticketId: string;
+  experienceId: string;
+  companyId: string;
+  type:
+    | 'NEW_MESSAGE'
+    | 'TICKET_CLAIMED'
+    | 'TICKET_CLOSED'
+    | 'USER_TYPING'
+    | 'USER_STOP_TYPING';
+}) => {
   if (!experienceId) {
     console.error('Experience ID is not set - websocket message not sent');
     return;
@@ -134,10 +164,11 @@ const sendMessageToWebsocket = async (
 
   try {
     // Send websocket message with ticket-specific identifier
-    const websocketMessage = {
-      type: 'NEW_MESSAGE',
+    const websocketMessage: WebsocketMessage = {
+      type,
       ticketId,
       data: message,
+      companyId,
     };
 
     await whopSdk.websockets.sendMessage({
@@ -150,4 +181,16 @@ const sendMessageToWebsocket = async (
     console.error('Failed to send websocket message:', error);
     // Don't throw the error to avoid failing the message creation
   }
+};
+
+export type WebsocketMessage = {
+  type:
+    | 'NEW_MESSAGE'
+    | 'TICKET_CLAIMED'
+    | 'TICKET_CLOSED'
+    | 'USER_TYPING'
+    | 'USER_STOP_TYPING';
+  ticketId: string;
+  data: MessageWithRelations | { username: string; userId: string };
+  companyId: string;
 };

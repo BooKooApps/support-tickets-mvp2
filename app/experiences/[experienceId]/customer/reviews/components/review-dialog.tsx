@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -14,14 +14,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Star } from 'lucide-react';
+import { Check, Loader2, Star } from 'lucide-react';
+import { ReviewResponse } from '@/app/api/reviews/route';
 
 interface ReviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  ticketId: string;
-  ticketTitle: string;
+  ticketId?: string;
+  ticketTitle?: string;
   onReviewSubmitted?: () => void;
+  review?: ReviewResponse;
 }
 
 export function ReviewDialog({
@@ -30,27 +32,39 @@ export function ReviewDialog({
   ticketId,
   ticketTitle,
   onReviewSubmitted,
+  review,
 }: ReviewDialogProps) {
   const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [feedback, setFeedback] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (rating === 0) return;
 
     setIsLoading(true);
     try {
+      const method = review ? 'PUT' : 'POST';
+      const body = review
+        ? {
+            reviewId: review.id,
+            rating,
+            feedback: feedback.trim() || null,
+          }
+        : {
+            ticketId,
+            rating,
+            feedback: feedback.trim() || null,
+          };
+
       const response = await fetch('/api/reviews', {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ticketId,
-          rating,
-          feedback: feedback.trim() || null,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (response.ok) {
@@ -65,14 +79,25 @@ export function ReviewDialog({
     }
   };
 
+  useEffect(() => {
+    if (review) {
+      setRating(review.rating);
+      setFeedback(review.feedback || '');
+    }
+  }, [review]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle>Rate Your Support Experience</DialogTitle>
-          <DialogDescription>
-            How was your experience with "{ticketTitle}"?
-          </DialogDescription>
+          {ticketTitle && (
+            <DialogDescription>
+              How was your experience with "{ticketTitle}"?
+            </DialogDescription>
+          )}
+
+          {review && <DialogDescription>Edit your review</DialogDescription>}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className='space-y-6'>
@@ -84,28 +109,40 @@ export function ReviewDialog({
                   key={star}
                   type='button'
                   onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(null)}
                   className='p-1 hover:scale-110 transition-transform'
                 >
                   <Star
                     className={`h-8 w-8 ${
-                      star <= rating
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-gray-300 hover:text-yellow-400'
+                      (
+                        hoverRating !== null
+                          ? star <= hoverRating
+                          : star <= rating
+                      )
+                        ? 'fill-primary text-primary dark:drop-shadow-[0_4px_16px_rgba(255,101,36,1)]'
+                        : 'text-gray-300 hover:text-primary'
                     }`}
                   />
                 </button>
               ))}
             </div>
-            {rating > 0 && (
-              <p className='text-sm text-gray-600'>
-                {rating === 1 &&
+            {(hoverRating ?? rating) > 0 ? (
+              <p className='text-sm text-muted-foreground'>
+                {(hoverRating ?? rating) === 1 &&
                   "We're sorry to hear that. We'll work to improve."}
-                {rating === 2 &&
+                {(hoverRating ?? rating) === 2 &&
                   'We appreciate your feedback and will do better.'}
-                {rating === 3 && 'Thank you for your feedback.'}
-                {rating === 4 && "Great! We're glad we could help."}
-                {rating === 5 &&
+                {(hoverRating ?? rating) === 3 &&
+                  'Thank you for your feedback.'}
+                {(hoverRating ?? rating) === 4 &&
+                  "Great! We're glad we could help."}
+                {(hoverRating ?? rating) === 5 &&
                   'Excellent! Thank you for the amazing feedback.'}
+              </p>
+            ) : (
+              <p className='text-sm text-muted-foreground'>
+                Please rate your experience
               </p>
             )}
           </div>
@@ -122,15 +159,13 @@ export function ReviewDialog({
           </div>
 
           <DialogFooter>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => onOpenChange(false)}
-            >
-              Skip Review
-            </Button>
             <Button type='submit' disabled={isLoading || rating === 0}>
-              {isLoading ? 'Submitting...' : 'Submit Review'}
+              {isLoading ? (
+                <Loader2 className='h-4 w-4 animate-spin mr-2' />
+              ) : (
+                <Check className='h-4 w-4 mr-2' />
+              )}
+              Submit Review
             </Button>
           </DialogFooter>
         </form>

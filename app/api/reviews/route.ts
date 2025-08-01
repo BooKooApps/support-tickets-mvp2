@@ -2,11 +2,20 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
 
+import type { Review as PrismaReview, User } from '@prisma/client';
+
+export type ReviewResponse = PrismaReview & {
+  user: User;
+};
+
+// api/reviews?experienceId=123&userOnly=true&page=1&limit=10
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const experienceId = searchParams.get('experienceId');
     const userOnly = searchParams.get('userOnly') === 'true';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
 
     if (!experienceId) {
       return NextResponse.json(
@@ -16,10 +25,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user has access to this experience
-    const { userId } = await verifyUser(experienceId);
+    const { userId, companyId } = await verifyUser(experienceId);
 
     const whereClause: any = {
-      experienceId,
+      companyId,
     };
 
     // If userOnly is true, filter by the current user's reviews
@@ -27,23 +36,38 @@ export async function GET(request: NextRequest) {
       whereClause.userId = userId;
     }
 
+    // Calculate offset for pagination
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination info
+    const totalCount = await prisma.review.count({
+      where: whereClause,
+    });
+
     const reviews = await prisma.review.findMany({
       where: whereClause,
       include: {
-        ticket: {
-          select: {
-            title: true,
-            description: true,
-            createdAt: true,
-          },
-        },
+        user: true,
       },
       orderBy: {
         createdAt: 'desc',
       },
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json(reviews);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return NextResponse.json({
+      reviews: reviews as ReviewResponse[],
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    });
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return NextResponse.json(
@@ -63,6 +87,9 @@ export async function POST(request: NextRequest) {
         id: ticketId,
         status: 'CLOSED',
       },
+      include: {
+        creator: true,
+      },
     });
 
     if (!ticket) {
@@ -72,24 +99,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user has access to this experience and is the ticket creator
-    const { userId, username } = await verifyUser(ticket.experienceId);
-
-    if (ticket.creatorId !== userId) {
-      return NextResponse.json(
-        { error: 'You can only review your own tickets' },
-        { status: 403 }
-      );
-    }
-
-    // Check if review already exists
-    const existingReview = await prisma.review.findUnique({
-      where: { ticketId },
+    // Check if user already has a review for this company
+    const existingReview = await prisma.review.findFirst({
+      where: { userId: ticket.creator.id, companyId: ticket.companyId },
     });
 
     if (existingReview) {
       return NextResponse.json(
-        { error: 'Review already submitted' },
+        { error: 'You have already submitted a review for this company' },
         { status: 400 }
       );
     }
@@ -98,10 +115,8 @@ export async function POST(request: NextRequest) {
       data: {
         rating,
         feedback,
-        ticketId,
-        userId: userId,
-        username: username,
-        experienceId: ticket.experienceId,
+        userId: ticket.creator.id,
+        companyId: ticket.companyId,
       },
     });
 
@@ -130,7 +145,7 @@ export async function PUT(request: NextRequest) {
     const existingReview = await prisma.review.findUnique({
       where: { id: reviewId },
       include: {
-        ticket: true,
+        user: true,
       },
     });
 
@@ -138,17 +153,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
     }
 
-    // Verify user has access to this experience and is the review author
-    const { userId } = await verifyUser(existingReview.experienceId);
-
-    if (existingReview.userId !== userId) {
-      return NextResponse.json(
-        { error: 'You can only edit your own reviews' },
-        { status: 403 }
-      );
-    }
-
-    // Update the review
     const updatedReview = await prisma.review.update({
       where: { id: reviewId },
       data: {
@@ -156,9 +160,7 @@ export async function PUT(request: NextRequest) {
         feedback,
       },
       include: {
-        ticket: {
-          select: { title: true, category: true },
-        },
+        user: true,
       },
     });
 
