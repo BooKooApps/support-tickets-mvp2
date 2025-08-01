@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,11 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertCircle,
   MessageCircle,
-  Clock,
-  User,
   ArrowLeft,
   Send,
-  Info,
   Smile,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,29 +19,12 @@ import { getTimeAgo } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
 import { Ticket, Category } from '@prisma/client';
 import { useOnWebsocketMessage } from '@whop/react';
-import { MessageWithAgentAndUser } from '@/app/api/tickets/[id]/messages/route';
+import {
+  MessageWithRelations,
+  WebsocketMessage,
+} from '@/app/api/tickets/[id]/messages/route';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
-type Message = {
-  id: string;
-  content: string;
-  createdAt: Date;
-  updatedAt: Date;
-  ticketId: string;
-  senderId: string;
-  username: string;
-  sender: {
-    id: string;
-    name: string;
-    role: 'USER' | 'CREATOR';
-  };
-};
-
-type WebsocketMessage = {
-  type: 'NEW_MESSAGE';
-  ticketId: string;
-  data: Message;
-};
+import { userTyping } from '../action/user-typing';
 
 type TicketWithRelations = Ticket & {
   category: Category;
@@ -66,27 +46,101 @@ export default function ChatPage({
   accessLevel,
   experienceId,
   companyId,
+  username,
+  userId,
   ticketId,
 }: {
   accessLevel: 'admin' | 'customer';
   experienceId: string;
   companyId: string;
   ticketId: string;
+  username: string;
+  userId: string;
 }) {
   const router = useRouter();
+  const [isTyping, setIsTyping] = useState({
+    userId: '',
+    username: '',
+    isTyping: false,
+  });
+
+  // Typing indicator state and refs
+  const [isCurrentUserTyping, setIsCurrentUserTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingEventRef = useRef<number>(0);
 
   useOnWebsocketMessage(message => {
     if (message.isTrusted) {
       try {
         const websocketMessage: WebsocketMessage = JSON.parse(message.json);
 
-        // Only handle NEW_MESSAGE type and for the current ticket
-        if (
-          websocketMessage.type === 'NEW_MESSAGE' &&
-          websocketMessage.ticketId === ticketId &&
-          websocketMessage.data
-        ) {
-          setMessages(prev => [...prev, websocketMessage.data]);
+        // only handle messages for the current company
+        if (websocketMessage.companyId !== companyId) {
+          return;
+        }
+
+        // only handle messages for the current ticket
+        if (websocketMessage.ticketId !== ticketId) {
+          return;
+        }
+
+        // if the message does not have data, return
+        if (!websocketMessage.data) {
+          return;
+        }
+
+        switch (websocketMessage.type) {
+          case 'NEW_MESSAGE':
+            setMessages(prev => [
+              ...prev,
+              websocketMessage.data as MessageWithRelations,
+            ]);
+
+            break;
+
+          case 'TICKET_CLAIMED':
+            // refresh the current data for both admin and customer
+
+            break;
+          case 'TICKET_CLOSED':
+            // refresh the current data for both admin and customer
+
+            break;
+          case 'USER_TYPING':
+            const typingUserId = (websocketMessage.data as { userId: string })
+              .userId;
+            const typingUsername = (
+              websocketMessage.data as { username: string }
+            ).username;
+
+            // Don't show typing indicator for current user
+            if (typingUserId !== userId) {
+              setIsTyping({
+                userId: typingUserId,
+                username: typingUsername,
+                isTyping: true,
+              });
+            }
+            break;
+          case 'USER_STOP_TYPING':
+            const stoppedTypingUserId = (
+              websocketMessage.data as { userId: string }
+            ).userId;
+            const stoppedTypingUsername = (
+              websocketMessage.data as { username: string }
+            ).username;
+
+            // Don't update typing indicator for current user
+            if (stoppedTypingUserId !== userId) {
+              setIsTyping({
+                userId: stoppedTypingUserId,
+                username: stoppedTypingUsername,
+                isTyping: false,
+              });
+            }
+            break;
+          default:
+            break;
         }
       } catch (error) {
         console.error('Failed to parse websocket message:', error);
@@ -97,17 +151,75 @@ export default function ChatPage({
   const [ticket, setTicket] = useState<TicketWithRelations | null>(null);
   const [ticketLoading, setTicketLoading] = useState(true);
   const [ticketError, setTicketError] = useState<string | null>(null);
+  // Improved typing logic with debouncing
+  const sendTypingEvent = useCallback(
+    async (typing: boolean) => {
+      try {
+        await userTyping({
+          isTyping: typing,
+          ticketId,
+          experienceId,
+          companyId,
+          username,
+          userId,
+        });
+        setIsCurrentUserTyping(typing);
+      } catch (error) {
+        console.error('Failed to send typing event:', error);
+      }
+    },
+    [ticketId, experienceId, companyId, username, userId]
+  );
+
+  const handleInputChange = useCallback(
+    async (value: string) => {
+      setNewMessage(value);
+
+      const now = Date.now();
+      const isEmpty = value.trim() === '';
+
+      // If input is empty, immediately stop typing
+      if (isEmpty) {
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = null;
+        }
+        if (isCurrentUserTyping) {
+          await sendTypingEvent(false);
+        }
+        return;
+      }
+
+      // If not currently typing, start typing
+      if (!isCurrentUserTyping) {
+        await sendTypingEvent(true);
+        lastTypingEventRef.current = now;
+      }
+
+      // Clear any existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set a timeout to stop typing after 3 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(async () => {
+        if (isCurrentUserTyping) {
+          await sendTypingEvent(false);
+        }
+      }, 3000);
+
+      lastTypingEventRef.current = now;
+    },
+    [isCurrentUserTyping, sendTypingEvent]
+  );
 
   // Chat state
-  const [messages, setMessages] = useState<MessageWithAgentAndUser[]>([]);
+  const [messages, setMessages] = useState<MessageWithRelations[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // UI state
-  const [isTicketInfoModalOpen, setIsTicketInfoModalOpen] = useState(false);
 
   // Get user info to determine role
   const {
@@ -177,6 +289,15 @@ export default function ChatPage({
     }
   }, [ticketId]);
 
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -210,8 +331,16 @@ export default function ChatPage({
         throw new Error('Failed to send message');
       }
 
-      const newMessageData = await response.json();
       setNewMessage('');
+
+      // Clear typing status when message is sent
+      if (isCurrentUserTyping) {
+        await sendTypingEvent(false);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       // You could add a toast notification here
@@ -286,12 +415,8 @@ export default function ChatPage({
     return null;
   }
 
-
-
   return (
     <>
-    
-
       {/* Chat Interface - Full Height */}
       <div className='flex-1 flex flex-col pb-[140px]'>
         {/* Messages Area */}
@@ -415,11 +540,23 @@ export default function ChatPage({
       {/* Fixed Message Input - Bottom */}
       <div className='fixed bottom-0 left-0 right-0 bg-background border-t z-40 p-4'>
         <div className='max-w-4xl mx-auto space-y-3'>
+          {/* Typing Indicator */}
+          {isTyping.isTyping && isTyping.userId !== userId && (
+            <div className='flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground'>
+              <div className='flex space-x-1'>
+                <div className='w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]'></div>
+                <div className='w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]'></div>
+                <div className='w-2 h-2 bg-current rounded-full animate-bounce'></div>
+              </div>
+              <span>{isTyping.username} is typing...</span>
+            </div>
+          )}
+
           <form onSubmit={handleSendMessage}>
             <div className='relative flex items-end bg-muted rounded-2xl border border-border focus-within:border-primary/20 transition-colors'>
               <Textarea
                 value={newMessage}
-                onChange={e => setNewMessage(e.target.value)}
+                onChange={e => handleInputChange(e.target.value)}
                 placeholder='Type your message...'
                 className='flex-1 min-h-[60px] max-h-[160px] resize-none border-0 bg-transparent px-4 py-3 pr-24 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0'
                 onKeyDown={e => {
@@ -433,18 +570,6 @@ export default function ChatPage({
 
               {/* Right side buttons container */}
               <div className='absolute right-2 bottom-2 flex items-center gap-1'>
-                {/* Ticket Info Toggle Button */}
-                <Button
-                  type='button'
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => setIsTicketInfoModalOpen(true)}
-                  className='h-8 w-8 p-0 hover:bg-background/60'
-                  title='Show ticket info'
-                >
-                  <Info className='h-4 w-4' />
-                </Button>
-
                 {/* Send Button */}
                 <Button
                   type='submit'

@@ -64,11 +64,10 @@ const CustomerHeader = ({
             </Button>
           </Link>
           {accessLevel === 'admin' && (
-            <Link href={`/experiences/${experienceId}/customer/whop-leadboard`}>
+            <Link href={`/experiences/${experienceId}/customer/settings`}>
               <Button
                 variant={
-                  pathName ===
-                  `/experiences/${experienceId}/customer/whop-leadboard`
+                  pathName === `/experiences/${experienceId}/customer/settings`
                     ? 'default'
                     : 'ghost'
                 }

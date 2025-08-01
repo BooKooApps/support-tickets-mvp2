@@ -7,7 +7,8 @@ export default async function CustomerPortalPage({
   params: Promise<{ experienceId: string; ticketId: string }>;
 }) {
   const { experienceId, ticketId } = await params;
-  const { accessLevel, companyId } = await verifyUser(experienceId);
+  const { accessLevel, companyId, username, userId } =
+    await verifyUser(experienceId);
 
   return (
     <ChatPage
@@ -15,6 +16,8 @@ export default async function CustomerPortalPage({
       experienceId={experienceId}
       companyId={companyId}
       ticketId={ticketId}
+      username={username}
+      userId={userId}
     />
   );
 }

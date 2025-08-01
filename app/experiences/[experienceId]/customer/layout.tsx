@@ -12,7 +12,7 @@ export default async function CustomerLayout({
 }) {
   const { experienceId } = await params;
 
-  const { userId, username, accessLevel } = await verifyUser(experienceId);
+  const {  accessLevel } = await verifyUser(experienceId);
 
   return (
     <div className='min-h-screen mx-auto'>

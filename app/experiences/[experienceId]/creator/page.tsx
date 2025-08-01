@@ -16,7 +16,7 @@ export default async function CreatorTicketsPage({
   return (
     <div className='space-y-6'>
       <CustomerTickets
-        accessLevel='admin'
+        accessLevel={accessLevel}
         experienceId={experienceId}
         companyId={companyId}
       />

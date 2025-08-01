@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     // Create initial message from the agent
     await prisma.message.create({
       data: {
-        content: agent.welcomeMessage,
+        content: agent.autoMessage,
         ticketId: ticket.id,
         agentId: agent.id,
         createdAt: new Date(),

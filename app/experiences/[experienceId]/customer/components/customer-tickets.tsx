@@ -165,7 +165,7 @@ export function CustomerTickets({
           <Loader2 className='h-4 w-4 animate-spin text-primary' />
         </div>
       ) : tickets.length === 0 ? (
-        <EmptyTicketState />
+        <EmptyTicketState accessLevel={accessLevel} />
       ) : (
         <CustomerTicketList
           experienceId={experienceId}

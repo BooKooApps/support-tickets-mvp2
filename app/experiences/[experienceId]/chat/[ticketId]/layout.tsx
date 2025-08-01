@@ -25,7 +25,11 @@ const layout = async ({
   return (
     <div className='bg-background flex flex-col h-screen'>
       {/* Fixed Back Button - Top Left Corner */}
-      <ChatHeader experienceId={experienceId} ticket={ticket} />
+      <ChatHeader
+        accessLevel={accessLevel}
+        experienceId={experienceId}
+        ticket={ticket}
+      />
       {children}
     </div>
   );
