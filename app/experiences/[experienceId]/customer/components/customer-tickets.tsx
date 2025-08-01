@@ -110,7 +110,14 @@ export function CustomerTickets({
             }
 
             if (tickets.length <= 2) {
-              setTickets(prev => [websocketMessage.data, ...prev]);
+              // criar um novo array de tickets onde o ticket recebido é atualizado
+              const updatedTickets = tickets.map(ticket =>
+                ticket.id === websocketMessage.data.id
+                  ? websocketMessage.data
+                  : ticket
+              );
+
+              setTickets(updatedTickets);
             }
 
             break;
@@ -121,7 +128,14 @@ export function CustomerTickets({
             }
 
             if (tickets.length <= 2) {
-              setTickets(prev => [websocketMessage.data, ...prev]);
+              // criar um novo array de tickets onde o ticket recebido é atualizado
+              const updatedTickets = tickets.map(ticket =>
+                ticket.id === websocketMessage.data.id
+                  ? websocketMessage.data
+                  : ticket
+              );
+
+              setTickets(updatedTickets);
             }
             break;
           default:
