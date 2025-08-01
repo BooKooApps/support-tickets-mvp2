@@ -24,7 +24,7 @@ export default function CreatorDashboardPage({
       </Suspense>
 
       <Suspense fallback={<ReviewsSectionSkeleton />}>
-        <ReviewsSection experienceId={experienceId} />
+        <ReviewsSection />
       </Suspense>
     </div>
   );

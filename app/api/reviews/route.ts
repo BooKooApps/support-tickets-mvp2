@@ -8,12 +8,14 @@ export type ReviewResponse = PrismaReview & {
   user: User;
 };
 
-// api/reviews?experienceId=123&userOnly=true
+// api/reviews?experienceId=123&userOnly=true&page=1&limit=10
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const experienceId = searchParams.get('experienceId');
     const userOnly = searchParams.get('userOnly') === 'true';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
 
     if (!experienceId) {
       return NextResponse.json(
@@ -34,6 +36,14 @@ export async function GET(request: NextRequest) {
       whereClause.userId = userId;
     }
 
+    // Calculate offset for pagination
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination info
+    const totalCount = await prisma.review.count({
+      where: whereClause,
+    });
+
     const reviews = await prisma.review.findMany({
       where: whereClause,
       include: {
@@ -42,9 +52,22 @@ export async function GET(request: NextRequest) {
       orderBy: {
         createdAt: 'desc',
       },
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json(reviews as ReviewResponse[]);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return NextResponse.json({
+      reviews: reviews as ReviewResponse[],
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    });
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return NextResponse.json(
