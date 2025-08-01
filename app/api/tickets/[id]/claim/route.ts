@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendTicketToWebsocket } from '../../route';
+import { sendTicketClaimedNotifications } from '@/lib/notifications';
 
 // api/tickets/[id]/claim/route.ts
 // This route is used to claim a ticket
@@ -72,6 +73,26 @@ export async function POST(
       experienceId,
       existingTicket.companyId,
       'TICKET_CLAIMED'
+    );
+
+    const company = await prisma.company.findUnique({
+      where: {
+        id: existingTicket.companyId,
+      },
+    });
+
+    // Send centralized notifications
+    sendTicketClaimedNotifications(
+      {
+        id: ticketId,
+        title: fullTicket?.title || '',
+        creatorId: existingTicket.creatorId,
+      },
+      {
+        id: existingTicket.companyId,
+        title: company?.title || '',
+      },
+      experienceId
     );
 
     return NextResponse.json(

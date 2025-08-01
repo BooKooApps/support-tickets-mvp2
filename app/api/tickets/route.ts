@@ -4,6 +4,7 @@ import { verifyUser } from '@/lib/authentication';
 import { whopSdk } from '@/lib/whop-api';
 import { TicketWithRelations } from '@/app/experiences/[experienceId]/customer/components/customer-tickets';
 import { Prisma } from '@prisma/client';
+import { sendNewTicketNotifications } from '@/lib/notifications';
 
 // GET /api/tickets?experienceId=...
 export async function GET(request: NextRequest) {
@@ -169,36 +170,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminUserIds = await prisma.userRole.findMany({
-      where: {
-        companyId,
-        role: 'admin',
+    // Send centralized notifications
+    sendNewTicketNotifications(
+      {
+        id: ticket.id,
+        title: fullTicket?.title || '',
+        creatorId: userId,
       },
-    });
-
-    await whopSdk.notifications.sendPushNotification({
-      // The ID of the company team to send the notification to
-      // companyTeamId: companyId,
-      // The subtitle of the notification
-      subtitle: `${company?.title} [Better Support Tickets]`,
-      // The title of the notification
-      title: '[NEW TICKET WAS CREATED 🚨]',
-      // The content of the notification
-      content: `${fullTicket?.creator.username} created a new [${fullTicket?.category.name}] ticket`,
-      // The ID of the experience to send the notification to
-      experienceId: experienceId,
-      // An external ID for the notification
-      externalId: ticket.id,
-      // Whether the notification is a mention
-      isMention: true,
-      // The rest path to append to the generated deep link that opens your app. Use
-      // [restPath] in your app path in the dashboard to read this parameter.
-      restPath: `/customer?tab=TICKETS`,
-      // The ID of the user sending the notification
-      senderUserId: userId,
-      // The IDs of the users to send the notification to
-      userIds: adminUserIds.map((user) => user.userId),
-    });
+      {
+        id: companyId,
+        title: company?.title || '',
+      },
+      experienceId
+    );
 
     return NextResponse.json(
       {

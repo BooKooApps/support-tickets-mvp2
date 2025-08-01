@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyUser } from '@/lib/authentication';
 import { whopSdk } from '@/lib/whop-api';
 import { Message as PrismaMessage, User, Agent } from '@prisma/client';
+import { sendNewMessageNotifications } from '@/lib/notifications';
 
 // Define a type for the message with agent and user included
 export type MessageWithRelations = PrismaMessage & {
@@ -122,6 +123,19 @@ export async function POST(
       companyId,
       type: 'NEW_MESSAGE',
     });
+
+    // Send centralized notifications (without await, runs asynchronously)
+    sendNewMessageNotifications(
+      content,
+      {
+        id: ticket.id,
+        title: ticket.title || '',
+        creatorId: ticket.creatorId,
+      },
+      userId,
+      companyId,
+      experienceId
+    );
 
     return NextResponse.json(
       {

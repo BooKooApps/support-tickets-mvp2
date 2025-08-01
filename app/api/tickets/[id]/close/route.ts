@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendTicketToWebsocket } from '../../route';
+import { sendTicketClosedNotifications } from '@/lib/notifications';
 
 export async function POST(
   request: NextRequest,
@@ -78,6 +79,26 @@ export async function POST(
       experienceId,
       ticket.companyId,
       'TICKET_CLOSED'
+    );
+
+    const company = await prisma.company.findUnique({
+      where: {
+        id: ticket.companyId,
+      },
+    });
+
+    // Send centralized notifications
+    sendTicketClosedNotifications(
+      {
+        id: ticket.id,
+        title: fullTicket?.title || '',
+        creatorId: ticket.creatorId,
+      },
+      {
+        id: ticket.companyId,
+        title: company?.title || '',
+      },
+      experienceId
     );
 
     return NextResponse.json(
