@@ -116,6 +116,7 @@ export function CustomerTickets({ experienceId }: { experienceId: string }) {
         <CustomerTicketList
           isLoading={isLoading}
           tickets={tickets}
+          setTickets={setTickets}
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}

@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyUser } from '@/lib/authentication';
 
 export async function POST(
   request: NextRequest,
@@ -20,18 +19,6 @@ export async function POST(
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    const { userId, accessLevel } = await verifyUser(
-      existingTicket.experienceId
-    );
-
-    // Check if user is admin or the ticket creator
-    const isAdmin = accessLevel === 'admin';
-    const isCreator = existingTicket.creatorId === userId;
-
-    if (!isAdmin && !isCreator) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
     const ticket = await prisma.ticket.update({
       where: { id: id },
       data: {
@@ -40,7 +27,18 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(ticket);
+    // check if the user already has a review for this company
+    const existingReview = await prisma.review.findFirst({
+      where: { userId: ticket.creatorId, companyId: ticket.companyId },
+    });
+
+    let shouldShowReviewDialog = false;
+
+    if (!existingReview) {
+      shouldShowReviewDialog = true;
+    }
+
+    return NextResponse.json({ ticket, shouldShowReviewDialog });
   } catch (error) {
     console.error('Error closing ticket:', error);
     return NextResponse.json(

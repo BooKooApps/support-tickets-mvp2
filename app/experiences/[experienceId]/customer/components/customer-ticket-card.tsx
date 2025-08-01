@@ -6,7 +6,13 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getTimeAgo } from '@/lib/utils';
-import { MessageCircle, Clock, User, CheckCircle2 } from 'lucide-react';
+import {
+  MessageCircle,
+  Clock,
+  User,
+  CheckCircle2,
+  Loader2,
+} from 'lucide-react';
 import { ReviewDialog } from './review-dialog';
 import type { TicketWithRelations } from './customer-tickets';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,8 +20,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 export function CustomerTicketCard({
   ticket,
   viewerRole = 'customer',
+  setTickets,
 }: {
   ticket: TicketWithRelations;
+  setTickets: (tickets: TicketWithRelations[]) => void;
   viewerRole?: 'customer' | 'creator';
 }) {
   const router = useRouter();
@@ -29,7 +37,10 @@ export function CustomerTicketCard({
         method: 'POST',
       });
       if (response.ok) {
-        setShowReviewDialog(true);
+        const data = await response.json();
+        if (data.shouldShowReviewDialog) {
+          setShowReviewDialog(true);
+        }
       }
     } catch (error) {
       console.error('Failed to close ticket:', error);
@@ -40,19 +51,19 @@ export function CustomerTicketCard({
 
   const statusConfig = {
     OPEN: {
-      color: 'bg-red-50 text-red-700 border-red-200',
+      color: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
       icon: Clock,
       text: 'Waiting for support',
       dotColor: 'bg-red-500',
     },
     CLAIMED: {
-      color: 'bg-amber-50 text-amber-700 border-amber-200',
+      color: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
       icon: User,
       text: 'Being handled',
       dotColor: 'bg-amber-500',
     },
     CLOSED: {
-      color: 'bg-green-50 text-green-700 border-green-200',
+      color: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
       icon: CheckCircle2,
       text: 'Resolved',
       dotColor: 'bg-green-500',
@@ -86,20 +97,14 @@ export function CustomerTicketCard({
             <div className='flex-1 space-y-3'>
               {/* Title and Status */}
               <div className='flex items-start gap-3'>
-                <div className='flex-1'>
-                  <h3 className='font-semibold text-lg  leading-tight mb-2'>
-                    {ticket.title}
-                  </h3>
-                  <Badge
-                    className={`${currentStatus.color} border font-medium px-3 py-1 flex items-center gap-1.5 w-fit`}
-                  >
-                    <div
-                      className={`w-2 h-2 rounded-full ${currentStatus.dotColor}`}
-                    />
-                    <StatusIcon className='h-3.5 w-3.5' />
-                    {currentStatus.text}
-                  </Badge>
-                </div>
+                <h3 className='font-semibold text-lg  leading-tight mb-2'>
+                  {ticket.title}
+                </h3>
+                {/* Category */}
+
+                <Badge className='border-0 font-medium px-3 py-1'>
+                  {ticket.category.name}
+                </Badge>
               </div>
 
               {/* User and Metadata */}
@@ -126,6 +131,15 @@ export function CustomerTicketCard({
                   <span className='font-medium'>{ticket._count.messages}</span>
                   <span>messages</span>
                 </div>
+                <Badge
+                  className={`${currentStatus.color} border font-medium px-3 py-1 flex items-center gap-1.5 w-fit`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full ${currentStatus.dotColor}`}
+                  />
+                  <StatusIcon className='h-3.5 w-3.5' />
+                  {currentStatus.text}
+                </Badge>
               </div>
             </div>
 
@@ -142,7 +156,11 @@ export function CustomerTicketCard({
                   onClick={handleClose}
                   disabled={isLoading}
                 >
-                  <CheckCircle2 className='h-4 w-4 mr-1' />
+                  {isLoading ? (
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                  ) : (
+                    <CheckCircle2 className='h-4 w-4 mr-1' />
+                  )}
                   Close
                 </Button>
               )}
@@ -152,12 +170,6 @@ export function CustomerTicketCard({
 
         <CardContent className='pt-0'>
           <div className='space-y-3'>
-            {/* Category */}
-
-            <Badge className='border-0 font-medium px-3 py-1'>
-              {ticket.category.name}
-            </Badge>
-
             {/* Description */}
             <p className='text-muted-foreground leading-relaxed line-clamp-2'>
               {ticket.description}

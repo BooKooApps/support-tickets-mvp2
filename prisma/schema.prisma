@@ -51,6 +51,7 @@ model User {
   createdAt DateTime
   tickets   Ticket[]
   Message   Message[]
+  Review    Review[]
 
   @@map("users")
 }
@@ -94,7 +95,6 @@ model Ticket {
   company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   category Category  @relation(fields: [categoryId], references: [id])
   messages Message[]
-  review   Review?
 
   @@map("tickets")
 }
@@ -124,12 +124,11 @@ model Review {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   companyId String
+  userId    String // External user ID from Whop
 
   // Relations
-  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  ticketId String  @unique
-  ticket   Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  userId   String // External user ID from Whop
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
 }

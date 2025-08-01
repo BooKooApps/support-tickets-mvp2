@@ -10,12 +10,14 @@ import { TicketWithRelations } from './customer-tickets';
 const CustomerTicketList = ({
   tickets,
   isLoading,
+  setTickets,
   currentPage,
   totalPages,
   onPageChange,
 }: {
   tickets: TicketWithRelations[];
   isLoading: boolean;
+  setTickets: (tickets: TicketWithRelations[]) => void;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -27,7 +29,11 @@ const CustomerTicketList = ({
           <CustomerTicketsSkeleton />
         ) : (
           tickets.map(ticket => (
-            <CustomerTicketCard key={ticket.id} ticket={ticket} />
+            <CustomerTicketCard
+              key={ticket.id}
+              ticket={ticket}
+              setTickets={setTickets}
+            />
           ))
         )}
       </div>
