@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendTicketToWebsocket } from '@/lib/websocket';
+import { sendMessageToWebsocket, sendTicketToWebsocket } from '@/lib/websocket';
 import { sendTicketClaimedNotifications } from '@/lib/notifications';
+import { verifyUser } from '@/lib/authentication';
 
 // api/tickets/[id]/claim/route.ts
 // This route is used to claim a ticket
@@ -22,6 +23,8 @@ export async function POST(
       );
     }
 
+    const { username, userId, companyId } = await verifyUser(experienceId);
+
     // verify it ticket exists and is open
     const existingTicket = await prisma.ticket.findFirst({
       where: {
@@ -40,6 +43,42 @@ export async function POST(
         status: 'CLAIMED',
         claimedAt: new Date(),
       },
+    });
+
+    const companyAgent = await prisma.agent.findFirst({
+      where: {
+        companyId: existingTicket.companyId,
+      },
+    });
+
+    if (!companyAgent) {
+      return NextResponse.json(
+        { error: 'No agent found for this company' },
+        { status: 404 }
+      );
+    }
+
+    // send message via agent to the customer
+    const agentMessage = await prisma.message.create({
+      data: {
+        content: `This ticket has been claimed by ${username}`,
+        ticketId: existingTicket.id,
+        agentId: companyAgent.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      include: {
+        agent: true,
+        user: true,
+      },
+    });
+
+    await sendMessageToWebsocket({
+      message: agentMessage,
+      ticketId,
+      experienceId,
+      companyId: existingTicket.companyId,
+      type: 'NEW_MESSAGE',
     });
 
     const fullTicket = await prisma.ticket.findUnique({

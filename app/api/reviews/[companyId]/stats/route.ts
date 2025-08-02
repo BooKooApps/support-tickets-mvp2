@@ -39,8 +39,6 @@ export async function GET(
     const totalReviews = reviews.length;
     const avgResponseTime = await getAverageResponseTime(companyId);
 
-    console.log('avgResponseTime', avgResponseTime);
-
     return NextResponse.json({
       avgRating,
       totalReviews,

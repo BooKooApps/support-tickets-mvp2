@@ -127,8 +127,6 @@ export function CustomerTickets({
               return;
             }
 
-            console.log('Updating new tickets count through websocket');
-
             setNewTicketsCount(prev => prev + 1);
             if (tickets.length > 2) {
               fetchTickets(currentPage, false);

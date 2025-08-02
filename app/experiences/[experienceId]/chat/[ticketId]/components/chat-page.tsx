@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Send,
   Smile,
+  Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -22,7 +23,6 @@ import { useOnWebsocketMessage } from '@whop/react';
 import { MessageWithRelations } from '@/app/api/tickets/[id]/messages/route';
 import { WebsocketMessage } from '@/lib/websocket';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { userTyping } from '../action/user-typing';
 
 type TicketWithRelations = Ticket & {
   category: Category;
@@ -156,20 +156,27 @@ export default function ChatPage({
   const sendTypingEvent = useCallback(
     async (typing: boolean) => {
       try {
-        await userTyping({
-          isTyping: typing,
-          ticketId,
-          experienceId,
-          companyId,
-          username,
-          userId,
-        });
+        const response = await fetch(
+          `/api/tickets/${ticketId}/typing?experienceId=${experienceId}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ isTyping: typing }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to send typing event');
+        }
+
         setIsCurrentUserTyping(typing);
       } catch (error) {
         console.error('Failed to send typing event:', error);
       }
     },
-    [ticketId, experienceId, companyId, username, userId]
+    [ticketId, experienceId]
   );
 
   const handleInputChange = useCallback(
@@ -486,7 +493,7 @@ export default function ChatPage({
                   {!isCurrentUser && (
                     <div className='flex flex-col items-center mr-3'>
                       {isAgent ? (
-                        <Smile className='h-8 w-8 text-muted-foreground' />
+                        <Bot className='h-8 w-8 text-muted-foreground' />
                       ) : (
                         <Avatar className='h-8 w-6 sm:h-8 sm:w-6 md:h-10 md:w-8'>
                           <AvatarImage src={avatarUrl} />

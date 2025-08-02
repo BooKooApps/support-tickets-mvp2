@@ -85,8 +85,6 @@ export async function DELETE(
       },
     });
 
-    console.log('ticketsUsingCategory', ticketsUsingCategory);
-
     if (ticketsUsingCategory) {
       return NextResponse.json(
         { error: 'Cannot delete category that is being used by tickets' },
