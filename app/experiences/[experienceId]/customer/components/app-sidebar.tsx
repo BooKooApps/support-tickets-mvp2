@@ -1,11 +1,57 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Ticket, Star, Trophy, Settings2, Menu, X } from 'lucide-react';
+import {
+  Ticket,
+  Star,
+  Trophy,
+  Settings2,
+  Menu,
+  X,
+  HelpCircle,
+} from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'next/navigation';
 import { useWindowSize } from '@react-hook/window-size';
+
+const NAV_ITEMS = [
+  {
+    adminLabel: 'All Tickets',
+    customerLabel: 'Your Tickets',
+    icon: Ticket,
+    href: '/experiences/${experienceId}/customer?tab=TICKETS',
+    accessLevel: 'admin',
+  },
+  {
+    adminLabel: 'Current Whop Reviews',
+    customerLabel: 'Current Whop Reviews',
+    icon: Star,
+    href: '/experiences/${experienceId}/customer?tab=REVIEWS',
+    accessLevel: 'customer',
+  },
+  {
+    adminLabel: 'General Whop Leadboard',
+    customerLabel: 'General Whop Leadboard',
+    icon: Trophy,
+    href: '/experiences/${experienceId}/customer?tab=LEADBOARD',
+    accessLevel: 'customer',
+  },
+  {
+    adminLabel: 'BooKoo Apps Support',
+    customerLabel: 'BooKoo Apps Support',
+    icon: HelpCircle,
+    href: '/experiences/${experienceId}/customer?tab=SUPPORT',
+    accessLevel: 'customer',
+  },
+  {
+    adminLabel: 'Admin Settings',
+    customerLabel: 'Admin Settings',
+    icon: Settings2,
+    href: '/experiences/${experienceId}/customer?tab=SETTINGS',
+    accessLevel: 'admin',
+  },
+];
 
 const AppSidebar = ({
   experienceId,
@@ -51,6 +97,15 @@ const AppSidebar = ({
               >
                 <Trophy className='h-4 w-4' />
                 General Whop Leadboard
+              </Button>
+            </Link>
+            <Link
+              href={`https://whop.com/bookoo-apps-developers/?a=lucasklemke`}
+              target='_blank'
+            >
+              <Button className='flex items-center gap-2 px-3 py-2 text-sm font-medium'>
+                <HelpCircle className='h-4 w-4' />
+                BooKoo Apps Support
               </Button>
             </Link>
             {accessLevel === 'admin' && (
@@ -161,6 +216,15 @@ const MobileSidebar = ({
                 >
                   <Trophy className='h-4 w-4' />
                   General Whop Leadboard
+                </Button>
+              </Link>
+              <Link
+                href={`https://whop.com/bookoo-apps-developers/?a=lucasklemke`}
+                target='_blank'
+              >
+                <Button className='w-full flex items-center gap-2 px-3 py-2 text-sm font-medium justify-start'>
+                  <HelpCircle className='h-4 w-4' />
+                  BooKoo Apps Support
                 </Button>
               </Link>
               {accessLevel === 'admin' && (
