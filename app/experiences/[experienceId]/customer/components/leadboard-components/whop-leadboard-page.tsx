@@ -281,9 +281,15 @@ const WhopLeadboardPage = ({
                             Avg Response
                           </span>
                           <span className='font-semibold text-lg'>
-                            {company.avgResponseTime > 0
-                              ? `${company.avgResponseTime}s`
-                              : 'N/A'}
+                            {company.avgResponseTime > 0 ? (
+                              company.avgResponseTime >= 3600 ? (
+                                `${(company.avgResponseTime / 3600).toFixed(1)}h`
+                              ) : company.avgResponseTime >= 60 ? (
+                                `${Math.round(company.avgResponseTime / 60)}m`
+                              ) : (
+                                `${company.avgResponseTime}s`
+                              )
+                            ) : 'N/A'}
                           </span>
                         </div>
                       </div>
