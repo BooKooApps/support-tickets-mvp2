@@ -5,6 +5,8 @@ import { CustomerTickets } from './customer-tickets';
 import ReviewsPage from './review-components/reviews-page';
 import WhopLeadboardPage from './leadboard-components/whop-leadboard-page';
 import { Company } from '@prisma/client';
+import { CategoriesManager } from './categories-manager';
+import { SettingsForm } from './settings-form';
 
 const ClientWrapper = ({
   experienceId,
@@ -54,7 +56,12 @@ const ClientWrapper = ({
         />
       );
     case 'SETTINGS':
-      return <div>Not ready yet</div>;
+      return (
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+          <SettingsForm experienceId={experienceId} />
+          <CategoriesManager experienceId={experienceId} />
+        </div>
+      );
     default:
       return (
         <div className='space-y-6'>

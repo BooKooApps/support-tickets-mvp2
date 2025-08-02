@@ -4,10 +4,10 @@ import { verifyUser } from '@/lib/authentication';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { name, description, color, experienceId } = body;
 
@@ -19,7 +19,7 @@ export async function PUT(
     }
 
     // Verify user has admin access to this experience
-    const { accessLevel } = await verifyUser(experienceId);
+    const { accessLevel, companyId } = await verifyUser(experienceId);
 
     if (accessLevel !== 'admin') {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function PUT(
     const updatedCategory = await prisma.category.update({
       where: {
         id,
-        experienceId, // Ensure the category belongs to the correct experience
+        companyId, // Ensure the category belongs to the correct company
       },
       data: {
         name,
@@ -52,11 +52,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
+
     const experienceId = searchParams.get('experienceId');
 
     if (!experienceId) {
@@ -67,7 +68,7 @@ export async function DELETE(
     }
 
     // Verify user has admin access to this experience
-    const { accessLevel } = await verifyUser(experienceId);
+    const { accessLevel, companyId } = await verifyUser(experienceId);
 
     if (accessLevel !== 'admin') {
       return NextResponse.json(
@@ -80,9 +81,11 @@ export async function DELETE(
     const ticketsUsingCategory = await prisma.ticket.findFirst({
       where: {
         categoryId: id,
-        experienceId, // Ensure we're checking tickets from the same experience
+        companyId, // Ensure we're checking tickets from the same company
       },
     });
+
+    console.log('ticketsUsingCategory', ticketsUsingCategory);
 
     if (ticketsUsingCategory) {
       return NextResponse.json(
@@ -94,7 +97,7 @@ export async function DELETE(
     await prisma.category.delete({
       where: {
         id,
-        experienceId, // Ensure the category belongs to the correct experience
+        companyId, // Ensure the category belongs to the correct experience
       },
     });
 

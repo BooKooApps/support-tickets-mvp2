@@ -8,63 +8,85 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
 
-interface Settings {
-  agentName: string;
-  welcomeMessage: string;
-  autoMessage: string;
-  reminderMessage: string;
-  reminderEnabled: boolean;
-  reminderHours: number;
-}
+import { useToast } from '@/hooks/use-toast';
+import { Agent } from '@prisma/client';
+import { Loader2, Save } from 'lucide-react';
 
 export function SettingsForm({ experienceId }: { experienceId: string }) {
-  const [settings, setSettings] = useState<Settings>({
-    agentName: '',
-    welcomeMessage: '',
-    autoMessage: '',
-    reminderMessage: '',
-    reminderEnabled: true,
-    reminderHours: 12,
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [isLoading, setIsLoading] = useState({
+    isFetching: false,
+    isSaving: false,
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    agentName?: string;
+    autoMessage?: string;
+  }>({});
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchSettings();
+    fetchAgent();
   }, []);
 
-  const fetchSettings = async () => {
+  const fetchAgent = async () => {
+    setIsLoading({
+      isFetching: true,
+      isSaving: false,
+    });
     try {
-      const response = await fetch(
-        `/api/settings?experienceId=${experienceId}`
-      );
+      const response = await fetch(`/api/agents?experienceId=${experienceId}`);
       if (response.ok) {
         const data = await response.json();
-        setSettings(data);
+        setAgent(data);
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
+    } finally {
+      setIsLoading({
+        isFetching: false,
+        isSaving: false,
+      });
     }
+  };
+
+  const validate = () => {
+    const newErrors: { agentName?: string; autoMessage?: string } = {};
+    if (!agent?.agentName) {
+      newErrors.agentName = 'Agent name is required';
+    } else if (agent.agentName.length > 60) {
+      newErrors.agentName = 'Agent name must be at most 60 characters';
+    }
+    if (!agent?.autoMessage) {
+      newErrors.autoMessage = 'Auto-response message is required';
+    } else if (agent.autoMessage.length > 500) {
+      newErrors.autoMessage =
+        'Auto-response message must be at most 500 characters';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+
+    if (!validate()) {
+      return;
+    }
+
+    setIsLoading({
+      isFetching: false,
+      isSaving: true,
+    });
 
     try {
-      const response = await fetch(
-        `/api/settings?experienceId=${experienceId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(settings),
-        }
-      );
+      const response = await fetch(`/api/agents?experienceId=${experienceId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(agent),
+      });
 
       if (response.ok) {
         toast({
@@ -81,7 +103,10 @@ export function SettingsForm({ experienceId }: { experienceId: string }) {
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsLoading({
+        isFetching: false,
+        isSaving: false,
+      });
     }
   };
 
@@ -90,108 +115,96 @@ export function SettingsForm({ experienceId }: { experienceId: string }) {
       <CardHeader>
         <CardTitle>Support Configuration</CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className='space-y-6'>
-          <div className='space-y-2'>
-            <Label htmlFor='agentName'>Agent Name</Label>
-            <Input
-              id='agentName'
-              value={settings.agentName}
-              onChange={e =>
-                setSettings(prev => ({ ...prev, agentName: e.target.value }))
-              }
-              placeholder='Support Team'
-            />
+      {isLoading.isFetching ? (
+        <CardContent>
+          <div className='flex items-center justify-center h-full'>
+            <Loader2 className='h-4 w-4 animate-spin' />
           </div>
-
-          <div className='space-y-2'>
-            <Label htmlFor='welcomeMessage'>Welcome Message</Label>
-            <Textarea
-              id='welcomeMessage'
-              value={settings.welcomeMessage}
-              onChange={e =>
-                setSettings(prev => ({
-                  ...prev,
-                  welcomeMessage: e.target.value,
-                }))
-              }
-              placeholder='Welcome message shown to users...'
-              rows={3}
-            />
-          </div>
-
-          <div className='space-y-2'>
-            <Label htmlFor='autoMessage'>Auto-Response Message</Label>
-            <Textarea
-              id='autoMessage'
-              value={settings.autoMessage}
-              onChange={e =>
-                setSettings(prev => ({ ...prev, autoMessage: e.target.value }))
-              }
-              placeholder='Automatic message sent when ticket is created...'
-              rows={3}
-            />
-          </div>
-
-          <div className='space-y-4'>
-            <div className='flex items-center justify-between'>
-              <div className='space-y-0.5'>
-                <Label>Reminder Messages</Label>
-                <p className='text-sm text-gray-500'>
-                  Send follow-up messages to inactive tickets
-                </p>
-              </div>
-              <Switch
-                checked={settings.reminderEnabled}
-                onCheckedChange={checked =>
-                  setSettings(prev => ({ ...prev, reminderEnabled: checked }))
+        </CardContent>
+      ) : agent ? (
+        <CardContent>
+          <form onSubmit={handleSubmit} className='space-y-6'>
+            <div className='space-y-2'>
+              <Label htmlFor='agentName'>Agent Name</Label>
+              <Input
+                disabled={isLoading.isSaving}
+                id='agentName'
+                value={agent.agentName}
+                maxLength={60}
+                onChange={e =>
+                  setAgent(prev =>
+                    prev ? { ...prev, agentName: e.target.value } : prev
+                  )
                 }
+                placeholder='Support Team'
               />
+              <div className='flex justify-between text-xs text-muted-foreground'>
+                <span>{agent.agentName.length}/60</span>
+                {errors.agentName && (
+                  <span className='text-red-500'>{errors.agentName}</span>
+                )}
+              </div>
             </div>
 
-            {settings.reminderEnabled && (
-              <>
-                <div className='space-y-2'>
-                  <Label htmlFor='reminderHours'>Reminder Delay (hours)</Label>
-                  <Input
-                    id='reminderHours'
-                    type='number'
-                    min='1'
-                    max='72'
-                    value={settings.reminderHours}
-                    onChange={e =>
-                      setSettings(prev => ({
-                        ...prev,
-                        reminderHours: Number.parseInt(e.target.value) || 12,
-                      }))
-                    }
-                  />
-                </div>
+            <div className='space-y-2'>
+              <Label htmlFor='autoMessage'>Auto-Response Message</Label>
+              <Textarea
+                disabled={isLoading.isSaving}
+                id='autoMessage'
+                value={agent.autoMessage}
+                maxLength={500}
+                onChange={e =>
+                  setAgent(prev =>
+                    prev ? { ...prev, autoMessage: e.target.value } : prev
+                  )
+                }
+                placeholder='Automatic message sent when ticket is created...'
+                rows={3}
+              />
+              <div className='flex justify-between text-xs text-muted-foreground'>
+                <span>{agent.autoMessage.length}/500</span>
+                {errors.autoMessage && (
+                  <span className='text-destructive'>{errors.autoMessage}</span>
+                )}
+              </div>
+            </div>
 
-                <div className='space-y-2'>
-                  <Label htmlFor='reminderMessage'>Reminder Message</Label>
-                  <Textarea
-                    id='reminderMessage'
-                    value={settings.reminderMessage}
-                    onChange={e =>
-                      setSettings(prev => ({
-                        ...prev,
-                        reminderMessage: e.target.value,
-                      }))
-                    }
-                    placeholder='Follow-up message for inactive tickets...'
-                    rows={3}
-                  />
-                </div>
-              </>
-            )}
+            <Button
+              type='submit'
+              disabled={
+                isLoading.isSaving ||
+                !agent.agentName ||
+                !agent.autoMessage ||
+                agent.agentName.length > 60 ||
+                agent.autoMessage.length > 500
+              }
+            >
+              {isLoading.isSaving ? (
+                <>
+                  <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className='h-4 w-4 mr-2' />
+                  Save Settings
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      ) : (
+        <CardContent>
+          <div className='flex flex-col items-center justify-center h-full text-center'>
+            <p>
+              No agent found.
+              <br />
+              Try reloading the page. If the error persists, please contact
+              support.
+            </p>
           </div>
-
-          <Button type='submit' disabled={isLoading}>
-            {isLoading ? 'Saving...' : 'Save Settings'}
-          </Button>
-        </form>
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 }

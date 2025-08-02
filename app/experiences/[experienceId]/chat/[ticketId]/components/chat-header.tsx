@@ -1,7 +1,17 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Clock, Ticket as TicketIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Clock,
+  Eye,
+  Home,
+  Loader2,
+  Menu,
+  Ticket as TicketIcon,
+  X,
+} from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -14,6 +24,10 @@ import { getTimeAgo } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { TicketWithCreatorAndCategory } from '../layout';
 import { useWindowSize } from '@react-hook/window-size';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { useOnWebsocketMessage } from '@whop/react';
+import { WebsocketMessage } from '@/app/api/tickets/[id]/messages/route';
+
 const ChatHeader = ({
   experienceId,
   ticket,
@@ -23,30 +37,142 @@ const ChatHeader = ({
   ticket: TicketWithCreatorAndCategory;
   accessLevel: 'admin' | 'customer';
 }) => {
-  const [isTicketInfoModalOpen, setIsTicketInfoModalOpen] = useState(false);
-  const [width, height] = useWindowSize();
+  const [width] = useWindowSize();
+  const [isTicketClosed, setIsTicketClosed] = useState(false);
+  const [isClosingLoading, setIsClosingLoading] = useState(false);
+  useEffect(() => {
+    console.log('ticket.status', ticket.status);
+    if (ticket.status === 'CLOSED') {
+      setIsTicketClosed(true);
+    }
+  }, [ticket.status]);
+
+  const handleClose = async () => {
+    setIsClosingLoading(true);
+    try {
+      const response = await fetch(
+        `/api/tickets/${ticket.id}/close?experienceId=${experienceId}`,
+        {
+          method: 'POST',
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.shouldShowReviewDialog && accessLevel === 'customer') {
+          // setShowReviewDialog(true);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to close ticket:', error);
+    } finally {
+      setIsClosingLoading(false);
+    }
+  };
+
+  useOnWebsocketMessage(message => {
+    if (message.isTrusted) {
+      try {
+        const websocketMessage: WebsocketMessage = JSON.parse(message.json);
+        console.log('websocketMessage', websocketMessage);
+
+        // only handle messages for the current company
+        if (websocketMessage.companyId !== ticket.companyId) {
+          return;
+        }
+
+        // only handle messages for the current ticket
+        if (websocketMessage.ticketId !== ticket.id) {
+          return;
+        }
+
+        // if the message does not have data, return
+        if (!websocketMessage.data) {
+          return;
+        }
+
+        switch (websocketMessage.type) {
+          case 'TICKET_CLOSED':
+            // refresh the current data for both admin and customer
+            setIsTicketClosed(true);
+            break;
+          default:
+            break;
+        }
+      } catch (error) {
+        console.error('Failed to parse websocket message:', error);
+      }
+    }
+  });
+
   const isMobile = width && width < 768;
+
+  if (!isMobile) {
+    return (
+      <header className='w-full flex justify-between items-center p-4 border-b'>
+        <Link href={`/experiences/${experienceId}/customer?tab=TICKETS`}>
+          <Button variant='ghost' size='sm'>
+            <ArrowLeft className='h-4 w-4 mr-2' />
+            Back to Dashboard
+          </Button>
+        </Link>
+        <div className='flex gap-2'>
+          <ViewTicketDetailsButton ticket={ticket} isMobile={false} />
+
+          {!isTicketClosed && (
+            <Button
+              size='sm'
+              variant='ghost'
+              type='button'
+              onClick={handleClose}
+              disabled={isClosingLoading}
+            >
+              {isClosingLoading ? (
+                <>
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                  Close Ticket.
+                </>
+              ) : (
+                'Close Ticket'
+              )}
+            </Button>
+          )}
+        </div>
+      </header>
+    );
+  }
+
   return (
-    <header className='w-full flex justify-between items-center p-4 border-b'>
-      <Link href={`/experiences/${experienceId}/customer?tab=TICKETS`}>
-        <Button variant='ghost' size='sm'>
-          <ArrowLeft className='h-4 w-4 mr-2' />
-          Back to Dashboard
-        </Button>
-      </Link>
-      <div className='flex gap-2'>
-        <Button
-          size='sm'
-          type='button'
-          onClick={() => setIsTicketInfoModalOpen(true)}
-        >
-          View Ticket Details
-        </Button>
-        <Button size='sm' variant='ghost' type='button'>
-          Close Ticket
-        </Button>
-      </div>
-      {/* Ticket Information Modal */}
+    <MobileSidebar
+      experienceId={experienceId}
+      accessLevel={accessLevel}
+      ticket={ticket}
+      isClosingLoading={isClosingLoading}
+      handleClose={handleClose}
+    />
+  );
+};
+
+const ViewTicketDetailsButton = ({
+  ticket,
+  isMobile,
+}: {
+  ticket: TicketWithCreatorAndCategory;
+  isMobile: boolean;
+}) => {
+  const [isTicketInfoModalOpen, setIsTicketInfoModalOpen] = useState(false);
+  return (
+    <>
+      <Button
+        size={isMobile ? 'lg' : 'sm'}
+        type='button'
+        onClick={() => setIsTicketInfoModalOpen(true)}
+        className={
+          isMobile ? 'w-full flex items-center justify-start gap-2' : ''
+        }
+      >
+        <Eye className={isMobile ? 'h-5 w-5' : 'h-4 w-4'} />
+        View Ticket Details
+      </Button>
       <Dialog
         open={isTicketInfoModalOpen}
         onOpenChange={setIsTicketInfoModalOpen}
@@ -107,7 +233,100 @@ const ChatHeader = ({
           </div>
         </DialogContent>
       </Dialog>
-    </header>
+    </>
+  );
+};
+
+const MobileSidebar = ({
+  experienceId,
+  accessLevel,
+  ticket,
+  isClosingLoading,
+  handleClose,
+}: {
+  experienceId: string;
+  accessLevel: 'admin' | 'customer';
+  ticket: TicketWithCreatorAndCategory;
+  isClosingLoading: boolean;
+  handleClose: () => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      {/* Top bar with menu button */}
+      <header className='flex items-center justify-between px-4 py-2 border-b'>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => setIsOpen(true)}
+          aria-label='Open sidebar'
+        >
+          <Menu className='h-5 w-5' />
+        </Button>
+        <div>
+          <ThemeToggle />
+        </div>
+      </header>
+      {/* Sidebar Drawer */}
+      {isOpen && (
+        <div className='fixed inset-0 z-50 bg-black/40'>
+          <nav className='fixed top-0 left-0 h-full w-64 bg-background shadow-lg flex flex-col z-50 animate-in slide-in-from-left duration-200'>
+            <div className='flex items-center justify-between px-4 py-3 border-b'>
+              <span className='font-bold text-lg'>Menu</span>
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={() => setIsOpen(false)}
+                aria-label='Close sidebar'
+              >
+                <X className='h-5 w-5' />
+              </Button>
+            </div>
+            <div className='flex-1 flex flex-col gap-4 px-2 py-4'>
+              <ViewTicketDetailsButton isMobile={true} ticket={ticket} />
+              <Button
+                size='lg'
+                variant='ghost'
+                type='button'
+                onClick={handleClose}
+                disabled={isClosingLoading}
+                className='w-full flex items-center justify-start gap-2'
+              >
+                {isClosingLoading ? (
+                  <>
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                    Close Ticket
+                  </>
+                ) : (
+                  <>
+                    <Check className='h-4 w-4' />
+                    Close Ticket
+                  </>
+                )}
+              </Button>
+              <Link href={`/experiences/${experienceId}/customer?tab=TICKETS`}>
+                <Button
+                  variant='ghost'
+                  size='lg'
+                  onClick={() => setIsOpen(false)}
+                  className='w-full flex items-center justify-start gap-2'
+                >
+                  <Home className='h-4 w-4' />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
+          </nav>
+          {/* Clickable overlay to close */}
+          <div
+            className='fixed inset-0 z-40'
+            onClick={() => setIsOpen(false)}
+            aria-label='Close sidebar overlay'
+          />
+        </div>
+      )}
+    </>
   );
 };
 

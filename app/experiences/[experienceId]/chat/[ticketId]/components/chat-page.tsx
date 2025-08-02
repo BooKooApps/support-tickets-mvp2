@@ -68,6 +68,7 @@ export default function ChatPage({
   const [isCurrentUserTyping, setIsCurrentUserTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingEventRef = useRef<number>(0);
+  const [isTicketClosed, setIsTicketClosed] = useState(false);
 
   useOnWebsocketMessage(message => {
     if (message.isTrusted) {
@@ -104,9 +105,10 @@ export default function ChatPage({
             break;
           case 'TICKET_CLOSED':
             // refresh the current data for both admin and customer
-
+            setIsTicketClosed(true);
             break;
           case 'USER_TYPING':
+            // not currently working
             const typingUserId = (websocketMessage.data as { userId: string })
               .userId;
             const typingUsername = (
@@ -123,6 +125,7 @@ export default function ChatPage({
             }
             break;
           case 'USER_STOP_TYPING':
+            // not currently working
             const stoppedTypingUserId = (
               websocketMessage.data as { userId: string }
             ).userId;
@@ -466,11 +469,7 @@ export default function ChatPage({
                 avatarUrl = message.user?.avatarUrl || '';
                 displayName = message.user?.username || 'User';
                 if (isCreator) {
-                  badge = (
-                    <Badge variant='outline' className='text-xs px-1 py-0'>
-                      Creator
-                    </Badge>
-                  );
+                  badge = null;
                 }
               }
 
@@ -557,7 +556,11 @@ export default function ChatPage({
               <Textarea
                 value={newMessage}
                 onChange={e => handleInputChange(e.target.value)}
-                placeholder='Type your message...'
+                placeholder={
+                  isTicketClosed
+                    ? 'This ticket has been closed'
+                    : 'Type your message...'
+                }
                 className='flex-1 min-h-[60px] max-h-[160px] resize-none border-0 bg-transparent px-4 py-3 pr-24 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0'
                 onKeyDown={e => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -565,7 +568,7 @@ export default function ChatPage({
                     handleSendMessage(e);
                   }
                 }}
-                disabled={sendingMessage}
+                disabled={sendingMessage || isTicketClosed}
               />
 
               {/* Right side buttons container */}
@@ -574,7 +577,9 @@ export default function ChatPage({
                 <Button
                   type='submit'
                   size='sm'
-                  disabled={!newMessage.trim() || sendingMessage}
+                  disabled={
+                    !newMessage.trim() || sendingMessage || isTicketClosed
+                  }
                   className='h-8 w-8 p-0 rounded-full'
                 >
                   {sendingMessage ? (
