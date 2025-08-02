@@ -224,6 +224,12 @@ export default function ChatPage({
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (ticket) {
+      setIsTicketClosed(ticket.status === 'CLOSED');
+    }
+  }, [ticket]);
+
   // Get user info to determine role
   const {
     user,
