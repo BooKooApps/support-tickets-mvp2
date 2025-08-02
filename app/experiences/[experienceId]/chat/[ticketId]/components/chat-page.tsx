@@ -600,7 +600,9 @@ export default function ChatPage({
 
           {/* Helper text and ticket info */}
           <div className='flex justify-between items-center text-xs text-muted-foreground px-1'>
-            <span>Press Enter to send, Shift+Enter for new line</span>
+            <span className='hidden sm:block'>
+              Press Enter to send, Shift+Enter for new line
+            </span>
             {ticket && (
               <div className='flex items-center gap-2'>
                 <span>#{ticket.id.slice(0, 8)}</span>
