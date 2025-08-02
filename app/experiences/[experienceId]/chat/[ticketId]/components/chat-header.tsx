@@ -26,7 +26,7 @@ import { TicketWithCreatorAndCategory } from '../layout';
 import { useWindowSize } from '@react-hook/window-size';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useOnWebsocketMessage } from '@whop/react';
-import { WebsocketMessage } from '@/app/api/tickets/[id]/messages/route';
+import { WebsocketMessage } from '@/lib/websocket';
 
 const ChatHeader = ({
   experienceId,

@@ -9,6 +9,7 @@ import CustomerTicketList from './customer-ticket-list';
 import { EmptyTicketState } from '@/components/empty-ticket-state';
 import { ErrorTicketState } from '@/components/error-ticket-state';
 import { Button } from '@/components/ui/button';
+import { WebsocketMessage } from '@/lib/websocket';
 
 export type TicketWithRelations = Ticket & {
   category: Category;
@@ -22,13 +23,6 @@ export type TicketWithRelations = Ticket & {
     messages: number;
   };
 };
-
-interface WebsocketMessage {
-  type: string;
-  data: TicketWithRelations;
-  companyId: string;
-  ticketId?: string;
-}
 
 export function CustomerTickets({
   experienceId,
@@ -141,7 +135,8 @@ export function CustomerTickets({
             }
 
             if (tickets.length <= 2) {
-              setTickets(prev => [websocketMessage.data, ...prev]);
+              const ticketData = websocketMessage.data as TicketWithRelations;
+              setTickets(prev => [ticketData, ...prev]);
             }
 
             break;
@@ -153,11 +148,10 @@ export function CustomerTickets({
             }
 
             if (tickets.length <= 2) {
+              const ticketData = websocketMessage.data as TicketWithRelations;
               // criar um novo array de tickets onde o ticket recebido é atualizado
               const updatedTickets = tickets.map(ticket =>
-                ticket.id === websocketMessage.data.id
-                  ? websocketMessage.data
-                  : ticket
+                ticket.id === ticketData.id ? ticketData : ticket
               );
 
               setTickets(updatedTickets);
@@ -171,11 +165,10 @@ export function CustomerTickets({
             }
 
             if (tickets.length <= 2) {
+              const ticketData = websocketMessage.data as TicketWithRelations;
               // criar um novo array de tickets onde o ticket recebido é atualizado
               const updatedTickets = tickets.map(ticket =>
-                ticket.id === websocketMessage.data.id
-                  ? websocketMessage.data
-                  : ticket
+                ticket.id === ticketData.id ? ticketData : ticket
               );
 
               setTickets(updatedTickets);

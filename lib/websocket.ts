@@ -49,12 +49,16 @@ export const sendMessageToWebsocket = async ({
 export type WebsocketMessage = {
   type:
     | 'NEW_MESSAGE'
+    | 'NEW_TICKET'
     | 'TICKET_CLAIMED'
     | 'TICKET_CLOSED'
     | 'USER_TYPING'
     | 'USER_STOP_TYPING';
   ticketId: string;
-  data: MessageWithRelations | { username: string; userId: string };
+  data:
+    | MessageWithRelations
+    | TicketWithRelations
+    | { username: string; userId: string };
   companyId: string;
 };
 

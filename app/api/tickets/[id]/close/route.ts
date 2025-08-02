@@ -1,8 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendTicketToWebsocket } from '../../route';
+import { sendTicketToWebsocket, sendMessageToWebsocket } from '@/lib/websocket';
 import { sendTicketClosedNotifications } from '@/lib/notifications';
-import { sendMessageToWebsocket } from '../messages/route';
 
 export async function POST(
   request: NextRequest,

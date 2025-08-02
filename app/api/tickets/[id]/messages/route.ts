@@ -4,6 +4,7 @@ import { verifyUser } from '@/lib/authentication';
 import { whopSdk } from '@/lib/whop-api';
 import { Message as PrismaMessage, User, Agent } from '@prisma/client';
 import { sendNewMessageNotifications } from '@/lib/notifications';
+import { sendMessageToWebsocket } from '@/lib/websocket';
 
 // Define a type for the message with agent and user included
 export type MessageWithRelations = PrismaMessage & {
@@ -152,59 +153,3 @@ export async function POST(
     );
   }
 }
-
-export const sendMessageToWebsocket = async ({
-  message,
-  ticketId,
-  experienceId,
-  companyId,
-  type,
-}: {
-  message: MessageWithRelations | { username: string; userId: string }; //can be the typing username
-  ticketId: string;
-  experienceId: string;
-  companyId: string;
-  type:
-    | 'NEW_MESSAGE'
-    | 'TICKET_CLAIMED'
-    | 'TICKET_CLOSED'
-    | 'USER_TYPING'
-    | 'USER_STOP_TYPING';
-}) => {
-  if (!experienceId) {
-    console.error('Experience ID is not set - websocket message not sent');
-    return;
-  }
-
-  try {
-    // Send websocket message with ticket-specific identifier
-    const websocketMessage: WebsocketMessage = {
-      type,
-      ticketId,
-      data: message,
-      companyId,
-    };
-
-    await whopSdk.websockets.sendMessage({
-      target: { experience: experienceId },
-      message: JSON.stringify(websocketMessage),
-    });
-
-    console.log(`Websocket message sent for ticket ${ticketId}`);
-  } catch (error) {
-    console.error('Failed to send websocket message:', error);
-    // Don't throw the error to avoid failing the message creation
-  }
-};
-
-export type WebsocketMessage = {
-  type:
-    | 'NEW_MESSAGE'
-    | 'TICKET_CLAIMED'
-    | 'TICKET_CLOSED'
-    | 'USER_TYPING'
-    | 'USER_STOP_TYPING';
-  ticketId: string;
-  data: MessageWithRelations | { username: string; userId: string };
-  companyId: string;
-};

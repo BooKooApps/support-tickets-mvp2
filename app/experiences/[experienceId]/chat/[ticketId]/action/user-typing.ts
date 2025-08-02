@@ -1,4 +1,4 @@
-import { sendMessageToWebsocket } from '@/app/api/tickets/[id]/messages/route';
+import { sendMessageToWebsocket } from '@/lib/websocket';
 
 export async function userTyping({
   isTyping,

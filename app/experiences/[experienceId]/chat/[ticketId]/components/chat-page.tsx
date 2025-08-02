@@ -19,10 +19,8 @@ import { getTimeAgo } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
 import { Ticket, Category } from '@prisma/client';
 import { useOnWebsocketMessage } from '@whop/react';
-import {
-  MessageWithRelations,
-  WebsocketMessage,
-} from '@/app/api/tickets/[id]/messages/route';
+import { MessageWithRelations } from '@/app/api/tickets/[id]/messages/route';
+import { WebsocketMessage } from '@/lib/websocket';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { userTyping } from '../action/user-typing';
 

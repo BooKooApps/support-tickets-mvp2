@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendTicketToWebsocket } from '../../route';
+import { sendTicketToWebsocket } from '@/lib/websocket';
 import { sendTicketClaimedNotifications } from '@/lib/notifications';
 
 // api/tickets/[id]/claim/route.ts
