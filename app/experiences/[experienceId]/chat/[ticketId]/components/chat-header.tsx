@@ -41,7 +41,6 @@ const ChatHeader = ({
   const [isTicketClosed, setIsTicketClosed] = useState(false);
   const [isClosingLoading, setIsClosingLoading] = useState(false);
   useEffect(() => {
-    console.log('ticket.status', ticket.status);
     if (ticket.status === 'CLOSED') {
       setIsTicketClosed(true);
     }
