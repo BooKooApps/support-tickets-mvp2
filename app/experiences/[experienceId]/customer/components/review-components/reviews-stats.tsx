@@ -72,7 +72,15 @@ const ReviewsStats = ({ companyId }: { companyId: string }) => {
           {isLoading ? (
             <Skeleton className='h-4 w-24 mb-2' />
           ) : (
-            <p className='text-2xl font-bold'>{avgResponseTime}</p>
+            <p className='text-2xl font-bold'>
+              {avgResponseTime > 0
+                ? avgResponseTime >= 3600
+                  ? `${(avgResponseTime / 3600).toFixed(1)}h`
+                  : avgResponseTime >= 60
+                    ? `${Math.round(avgResponseTime / 60)}m`
+                    : `${avgResponseTime}s`
+                : 'N/A'}
+            </p>
           )}
         </CardContent>
       </Card>
