@@ -69,28 +69,87 @@ const ChatHeader = ({
   };
 
   useOnWebsocketMessage(message => {
+    console.log('message received', message);
     if (message.isTrusted) {
       try {
         const websocketMessage: WebsocketMessage = JSON.parse(message.json);
         console.log('websocketMessage', websocketMessage);
+        //         {
+        //     "type": "TICKET_CLOSED",
+        //     "companyId": "biz_jgs9mn7GMyO9Ni",
+        //     "data": {
+        //         "id": "cmdupm5ms0001vbnid6oiwu7v",
+        //         "companyId": "biz_jgs9mn7GMyO9Ni",
+        //         "title": "Ticket test",
+        //         "description": "Test ticket for development",
+        //         "status": "CLOSED",
+        //         "priority": "MEDIUM",
+        //         "creatorId": "user_V6tvGS4834UX3",
+        //         "categoryId": "cmdth9iwi0000vbqwtoi9k50c",
+        //         "createdAt": "2025-08-02T20:33:09.889Z",
+        //         "updatedAt": "2025-08-02T20:34:07.707Z",
+        //         "claimedAt": null,
+        //         "closedAt": "2025-08-02T20:34:07.705Z",
+        //         "category": {
+        //             "id": "cmdth9iwi0000vbqwtoi9k50c",
+        //             "companyId": "biz_jgs9mn7GMyO9Ni",
+        //             "name": "General",
+        //             "description": "Ask questions or get general help about our services.",
+        //             "color": "#3B82F6",
+        //             "createdAt": "2025-08-01T23:51:37.458Z",
+        //             "updatedAt": "2025-08-01T23:51:37.458Z"
+        //         },
+        //         "creator": {
+        //             "username": "lucasklemke",
+        //             "email": null,
+        //             "avatarUrl": "https://assets.whop.com/uploads/2025-07-25/user_15272610_8d1cc352-7c4e-4385-a7e4-20d6e2a27749.jpeg"
+        //         },
+        //         "messages": [
+        //             {
+        //                 "id": "cmdupm8850003vbni9jj68wl1",
+        //                 "content": "We will get back to you as soon as possible. Thank you for your patience.",
+        //                 "createdAt": "2025-08-02T20:33:13.253Z",
+        //                 "updatedAt": "2025-08-02T20:33:13.253Z",
+        //                 "userId": null,
+        //                 "agentId": "cmdth9jx80005vbqwvb9du22a",
+        //                 "ticketId": "cmdupm5ms0001vbnid6oiwu7v"
+        //             }
+        //         ],
+        //         "_count": {
+        //             "messages": 1
+        //         }
+        //     }
+        // }
 
         // only handle messages for the current company
         if (websocketMessage.companyId !== ticket.companyId) {
+          console.log(
+            'companyId mismatch',
+            websocketMessage.companyId,
+            ticket.companyId
+          );
           return;
         }
 
         // only handle messages for the current ticket
         if (websocketMessage.ticketId !== ticket.id) {
+          console.log(
+            'ticketId mismatch',
+            websocketMessage.ticketId,
+            ticket.id
+          );
           return;
         }
 
         // if the message does not have data, return
         if (!websocketMessage.data) {
+          console.log('no data', websocketMessage);
           return;
         }
 
         switch (websocketMessage.type) {
           case 'TICKET_CLOSED':
+            console.log('ticket closed');
             // refresh the current data for both admin and customer
             setIsTicketClosed(true);
             break;

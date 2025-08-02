@@ -5,6 +5,7 @@ import { whopSdk } from '@/lib/whop-api';
 import { TicketWithRelations } from '@/app/experiences/[experienceId]/customer/components/customer-tickets';
 import { Prisma } from '@prisma/client';
 import { sendNewTicketNotifications } from '@/lib/notifications';
+import { WebsocketMessage } from './[id]/messages/route';
 
 // GET /api/tickets?experienceId=...
 export async function GET(request: NextRequest) {
@@ -215,10 +216,11 @@ export const sendTicketToWebsocket = async (
 
   try {
     // Send websocket message for new ticket
-    const websocketMessage = {
+    const websocketMessage: WebsocketMessage = {
       type,
       companyId,
       data: ticket,
+      ticketId: ticket.id,
     };
 
     await whopSdk.websockets.sendMessage({

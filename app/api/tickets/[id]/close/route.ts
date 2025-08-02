@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendTicketToWebsocket } from '../../route';
 import { sendTicketClosedNotifications } from '@/lib/notifications';
+import { sendMessageToWebsocket } from '../messages/route';
 
 export async function POST(
   request: NextRequest,
@@ -35,6 +36,43 @@ export async function POST(
         status: 'CLOSED',
         closedAt: new Date(),
       },
+    });
+
+    const companyAgent = await prisma.agent.findFirst({
+      where: {
+        companyId: ticket.companyId,
+      },
+    });
+
+    if (!companyAgent) {
+      return NextResponse.json(
+        { error: 'No agent found for this company' },
+        { status: 404 }
+      );
+    }
+
+    // send message via agent to the customer
+    const agentMessage = await prisma.message.create({
+      data: {
+        content:
+          'We have closed your ticket. If you have any further questions, please feel free to open a new ticket.',
+        ticketId: ticket.id,
+        agentId: companyAgent.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      include: {
+        agent: true,
+        user: true,
+      },
+    });
+
+    await sendMessageToWebsocket({
+      message: agentMessage,
+      ticketId,
+      experienceId,
+      companyId: ticket.companyId,
+      type: 'NEW_MESSAGE',
     });
 
     const fullTicket = await prisma.ticket.findUnique({
