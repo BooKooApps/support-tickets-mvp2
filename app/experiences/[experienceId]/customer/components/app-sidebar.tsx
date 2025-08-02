@@ -103,7 +103,10 @@ const AppSidebar = ({
               href={`https://whop.com/bookoo-apps-developers/?a=lucasklemke`}
               target='_blank'
             >
-              <Button className='flex items-center gap-2 px-3 py-2 text-sm font-medium'>
+              <Button
+                variant={'ghost'}
+                className='flex items-center gap-2 px-3 py-2 text-sm font-medium'
+              >
                 <HelpCircle className='h-4 w-4' />
                 BooKoo Apps Support
               </Button>
@@ -222,7 +225,10 @@ const MobileSidebar = ({
                 href={`https://whop.com/bookoo-apps-developers/?a=lucasklemke`}
                 target='_blank'
               >
-                <Button className='w-full flex items-center gap-2 px-3 py-2 text-sm font-medium justify-start'>
+                <Button
+                  variant={'ghost'}
+                  className='w-full flex items-center gap-2 px-3 py-2 text-sm font-medium justify-start'
+                >
                   <HelpCircle className='h-4 w-4' />
                   BooKoo Apps Support
                 </Button>
