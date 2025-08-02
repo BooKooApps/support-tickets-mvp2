@@ -226,6 +226,15 @@ const MobileSidebar = ({
                 </Link>
               )}
             </div>
+            <div className='flex items-center justify-center px-4 pb-8'>
+              <Link
+                href='https://whop.com/bookooapps'
+                target='_blank'
+                className='text-sm font-light'
+              >
+                Powered by BooKoo Apps
+              </Link>
+            </div>
           </nav>
           {/* Clickable overlay to close */}
           <div
