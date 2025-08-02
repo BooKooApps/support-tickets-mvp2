@@ -10,6 +10,7 @@ import { MessageCircle, Clock, CheckCircle2, Loader2 } from 'lucide-react';
 import { ReviewDialog } from './review-components/review-dialog';
 import type { TicketWithRelations } from './customer-tickets';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useWindowSize } from '@react-hook/window-size';
 
 export function CustomerTicketCard({
   ticket,
@@ -91,6 +92,9 @@ export function CustomerTicketCard({
     router.push(`/experiences/${experienceId}/chat/${ticket.id}`);
   };
 
+  const [width, height] = useWindowSize();
+  const isMobile = width && width < 768;
+
   return (
     <>
       <Card
@@ -110,24 +114,25 @@ export function CustomerTicketCard({
             <div className='flex-1 space-y-3'>
               {/* Title and Status */}
               <div className='flex items-start gap-3'>
-                <h3 className='font-semibold text-lg  leading-tight mb-2'>
+                <h3 className='font-semibold text-base md:text-lg  leading-tight mb-2'>
                   {ticket.title}
                 </h3>
                 {/* Category */}
-
-                <Badge
-                  style={{
-                    backgroundColor: ticket.category.color,
-                  }}
-                  className={`border-0 font-medium px-3 py-1`}
-                >
-                  {ticket.category.name}
-                </Badge>
+                {!isMobile && (
+                  <Badge
+                    style={{
+                      backgroundColor: ticket.category.color,
+                    }}
+                    className={`border-0 font-medium px-3 py-1`}
+                  >
+                    {ticket.category.name}
+                  </Badge>
+                )}
               </div>
 
               {/* User and Metadata */}
-              <div className='flex items-center gap-6 text-sm'>
-                <div className='flex items-center gap-2'>
+              <div className='grid gap-6 text-xs grid-cols-2 md:text-sm md:grid-cols-4 lg:grid-cols-8 items-start md:items-center'>
+                <div className='flex items-center gap-2 col-span-2 md:col-span-1'>
                   <Avatar className='h-7 w-7'>
                     <AvatarImage src={ticket.creator.avatarUrl || ''} />
                     <AvatarFallback className='text-xs '>
@@ -149,14 +154,26 @@ export function CustomerTicketCard({
                   <span className='font-medium'>{ticket._count.messages}</span>
                   <span>messages</span>
                 </div>
+
                 <Badge
-                  className={`${currentStatus.color} border font-medium px-3 py-1 flex items-center gap-1.5 w-fit`}
+                  className={`${currentStatus.color} border col-span-2 md:col-span-1 w-full md:w-fit font-medium px-3 py-1 flex items-center gap-1.5`}
                 >
                   <div
                     className={`w-2 h-2 rounded-full ${currentStatus.dotColor}`}
                   />
                   {currentStatus.text}
                 </Badge>
+
+                {isMobile && (
+                  <Badge
+                    style={{
+                      backgroundColor: ticket.category.color,
+                    }}
+                    className={`border-0 font-medium px-3 py-1 col-span-2 md:col-span-1`}
+                  >
+                    {ticket.category.name}
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -165,7 +182,7 @@ export function CustomerTicketCard({
               className={
                 ticket.status === 'OPEN' && accessLevel === 'admin'
                   ? 'flex items-center gap-2'
-                  : 'flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity'
+                  : 'flex items-center gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity'
               }
               // Prevent card click when clicking on buttons
               onClick={e => e.stopPropagation()}

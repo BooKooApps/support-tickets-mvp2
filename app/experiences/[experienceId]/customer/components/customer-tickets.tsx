@@ -47,14 +47,20 @@ export function CustomerTickets({
   const [currentView, setCurrentView] = useState<'open' | 'closed'>('open');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchTickets = async () => {
-    setCurrentPage(1);
+  const fetchTickets = async (
+    page: number = currentPage,
+    resetPage: boolean = false
+  ) => {
+    if (resetPage) {
+      setCurrentPage(1);
+      page = 1;
+    }
     setTickets([]);
     setTotalPages(1);
     try {
       setIsLoading(true);
       const response = await fetch(
-        `/api/tickets?experienceId=${experienceId}&page=${currentPage}&limit=3`
+        `/api/tickets?experienceId=${experienceId}&page=${page}&limit=3`
       );
 
       if (!response.ok) {
@@ -72,15 +78,21 @@ export function CustomerTickets({
     }
   };
 
-  const fetchClosedTickets = async () => {
-    setCurrentPage(1);
+  const fetchClosedTickets = async (
+    page: number = currentPage,
+    resetPage: boolean = false
+  ) => {
+    if (resetPage) {
+      setCurrentPage(1);
+      page = 1;
+    }
     setTickets([]);
     setTotalPages(1);
 
     try {
       setIsLoading(true);
       const response = await fetch(
-        `/api/tickets/closed?experienceId=${experienceId}&page=${currentPage}&limit=3`
+        `/api/tickets/closed?experienceId=${experienceId}&page=${page}&limit=3`
       );
 
       if (!response.ok) {
@@ -123,7 +135,7 @@ export function CustomerTickets({
 
             setNewTicketsCount(prev => prev + 1);
             if (tickets.length > 2) {
-              fetchTickets();
+              fetchTickets(currentPage, false);
             }
 
             if (tickets.length <= 2) {
@@ -135,7 +147,7 @@ export function CustomerTickets({
           case 'TICKET_CLAIMED':
             // refresh the current data for both admin and customer
             if (tickets.length > 2) {
-              fetchTickets();
+              fetchTickets(currentPage, false);
             }
 
             if (tickets.length <= 2) {
@@ -153,7 +165,7 @@ export function CustomerTickets({
           case 'TICKET_CLOSED':
             // refresh the current data for both admin and customer
             if (tickets.length > 2) {
-              fetchTickets();
+              fetchTickets(currentPage, false);
             }
 
             if (tickets.length <= 2) {
@@ -183,13 +195,31 @@ export function CustomerTickets({
     }
   };
 
+  const resetAndFetchTickets = () => {
+    if (currentView === 'open') {
+      fetchTickets(1, true);
+    } else {
+      fetchClosedTickets(1, true);
+    }
+  };
+
+  // Effect for when view changes or experienceId changes - reset to page 1
   useEffect(() => {
     if (currentView === 'open') {
-      fetchTickets();
+      fetchTickets(1, true);
     } else {
-      fetchClosedTickets();
+      fetchClosedTickets(1, true);
     }
-  }, [experienceId, currentPage, currentView]);
+  }, [experienceId, currentView]);
+
+  // Effect for when page changes - keep current page
+  useEffect(() => {
+    if (currentView === 'open') {
+      fetchTickets(currentPage, false);
+    } else {
+      fetchClosedTickets(currentPage, false);
+    }
+  }, [currentPage]);
 
   if (error) {
     return <ErrorTicketState error={error} />;
@@ -201,10 +231,11 @@ export function CustomerTickets({
         accessLevel,
         newTicketsCount,
         handleClickNewTicketWarning,
-        fetchTickets,
+        fetchTickets: resetAndFetchTickets,
         experienceId,
         setTickets,
         tickets,
+        resetAndFetchTickets,
       })}
 
       <div className='w-full flex items-center gap-2'>
@@ -252,6 +283,7 @@ const RenderHeader = ({
   fetchTickets,
   tickets,
   experienceId,
+  resetAndFetchTickets,
 }: {
   accessLevel: 'admin' | 'customer';
   newTicketsCount: number;
@@ -260,6 +292,7 @@ const RenderHeader = ({
   fetchTickets: () => void;
   tickets: TicketWithRelations[];
   experienceId: string;
+  resetAndFetchTickets: () => void;
 }) => {
   if (accessLevel === 'admin') {
     return (
@@ -296,7 +329,7 @@ const RenderHeader = ({
         experienceId={experienceId}
         setTickets={setTickets}
         tickets={tickets}
-        fetchTickets={fetchTickets}
+        fetchTickets={resetAndFetchTickets}
       />
     </div>
   );

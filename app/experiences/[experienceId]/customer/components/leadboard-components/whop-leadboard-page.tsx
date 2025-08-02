@@ -140,7 +140,7 @@ const WhopLeadboardPage = ({
         </Label>
         <Input
           id='search'
-          className='w-1/3'
+          className='md:w-1/3'
           type='text'
           placeholder='Search companies...'
           value={search}

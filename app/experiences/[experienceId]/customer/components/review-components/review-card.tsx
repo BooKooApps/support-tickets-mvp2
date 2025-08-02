@@ -54,23 +54,32 @@ export const ReviewCard = ({
     <Card className='dark:border-primary'>
       <CardContent className='p-6'>
         {/* Review Header */}
-        <div className='flex items-start justify-between mb-4'>
+        <div
+          className='
+            grid 
+            gap-4 
+            mb-4
+            grid-cols-1
+            sm:grid-cols-[1fr_auto]
+            items-start
+          '
+        >
           <div className='flex items-center gap-4'>
-            <Avatar className='h-12 w-12 border-2 '>
+            <Avatar className='h-12 w-12 border-2'>
               <AvatarImage src={review.user.avatarUrl || ''} />
-              <AvatarFallback className=' font-semibold'>
+              <AvatarFallback className='font-semibold'>
                 {review.user.username?.charAt(0).toUpperCase() || ''}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h4 className='font-semibold '>{review.user.username}</h4>
-              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+              <h4 className='font-semibold'>{review.user.username}</h4>
+              <div className='flex items-center gap-2 md:text-sm text-muted-foreground'>
                 <Calendar className='h-4 w-4' />
                 {formatDate(review.createdAt)}
               </div>
             </div>
           </div>
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2 justify-start sm:justify-end mt-4 sm:mt-0'>
             <div className='flex items-center gap-2 border-primary border px-3 py-1 rounded-full'>
               <StarRating rating={review.rating} />
               <span className='text-sm font-semibold text-primary'>

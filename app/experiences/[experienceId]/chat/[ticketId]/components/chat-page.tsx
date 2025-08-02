@@ -485,7 +485,7 @@ export default function ChatPage({
                       {isAgent ? (
                         <Smile className='h-8 w-8 text-muted-foreground' />
                       ) : (
-                        <Avatar className='h-8 w-8'>
+                        <Avatar className='h-8 w-6 sm:h-8 sm:w-6 md:h-10 md:w-8'>
                           <AvatarImage src={avatarUrl} />
                           <AvatarFallback className='text-xs'>
                             {displayName?.charAt(0)}

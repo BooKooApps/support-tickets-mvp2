@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getTimeAgo } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { TicketWithCreatorAndCategory } from '../layout';
+import { useWindowSize } from '@react-hook/window-size';
 const ChatHeader = ({
   experienceId,
   ticket,
@@ -23,6 +24,8 @@ const ChatHeader = ({
   accessLevel: 'admin' | 'customer';
 }) => {
   const [isTicketInfoModalOpen, setIsTicketInfoModalOpen] = useState(false);
+  const [width, height] = useWindowSize();
+  const isMobile = width && width < 768;
   return (
     <header className='w-full flex justify-between items-center p-4 border-b'>
       <Link href={`/experiences/${experienceId}/customer?tab=TICKETS`}>
