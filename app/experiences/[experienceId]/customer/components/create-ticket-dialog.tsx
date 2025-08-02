@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Check, Loader2, Plus } from 'lucide-react';
 import { TicketWithRelations } from './customer-tickets';
+import { useToast } from '@/hooks/use-toast';
 
 interface Category {
   id: string;
@@ -52,6 +53,7 @@ export function CreateTicketDialog({
   const [categoryId, setCategoryId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchCategories();
@@ -67,6 +69,11 @@ export function CreateTicketDialog({
         setCategories(data);
       }
     } catch (error) {
+      toast({
+        title: 'Failed to fetch categories',
+        description: `${error}`,
+        variant: 'destructive',
+      });
       console.error('Failed to fetch categories:', error);
     }
   };
@@ -106,8 +113,29 @@ export function CreateTicketDialog({
         } else {
           fetchTickets();
         }
+      } else {
+        // Get error message from server
+        let errorMsg = 'Failed to create ticket';
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.error) {
+            errorMsg = errorData.error;
+          }
+        } catch (err) {
+          // ignore JSON parse error, use default message
+        }
+        toast({
+          title: 'Failed to create ticket',
+          description: errorMsg,
+          variant: 'destructive',
+        });
       }
     } catch (error) {
+      toast({
+        title: 'Failed to create ticket',
+        description: `${error}`,
+        variant: 'destructive',
+      });
       console.error('Failed to create ticket:', error);
     } finally {
       setIsLoading(false);

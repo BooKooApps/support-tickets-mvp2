@@ -100,6 +100,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // if user already has a ticket open, return an error
+    const existingTicket = await prisma.ticket.findFirst({
+      where: {
+        companyId,
+        creatorId: userId,
+        status: 'OPEN',
+      },
+    });
+
+    if (existingTicket) {
+      return NextResponse.json(
+        { error: 'You already have a ticket open' },
+        { status: 400 }
+      );
+    }
+
     const ticket = await prisma.ticket.create({
       data: {
         title,
