@@ -18,6 +18,12 @@ const CompanyCard = ({
   getRankBadgeColor: () => string;
   getRankIcon: () => React.ReactNode;
 }) => {
+  //   not being displayed
+  // https://assets.whop.com/uploads/2025-03-22/user_9394871_bd5b3c77-74cf-4b47-8b3b-53fe9c93fc93.png
+
+  //   being displayed
+  // https://assets.whop.com/uploads/2025-07-17/user_4092103_02e58d2c-bd5d-48c2-b9cc-49941c9bf538.png
+
   return (
     <Card
       onClick={e => {

@@ -86,26 +86,36 @@ export default async function HomePage({
     experienceId,
   });
 
-  console.log(accessPasses);
+  const accessPass = await whopSdk.accessPasses.getAccessPass({
+    // The ID or route of the access pass to fetch.
+    accessPassId: accessPasses.accessPasses[0]?.id,
+  });
 
-  if (accessPasses.accessPasses[0]?.logo !== company.logoUrl) {
+
+  if (
+    accessPass.logo?.sourceUrl &&
+    accessPass.logo?.sourceUrl !== company.logoUrl
+  ) {
     await prisma.company.update({
       where: {
         id: company.id,
       },
       data: {
-        logoUrl: accessPasses.accessPasses[0]?.logo?.sourceUrl,
+        logoUrl: accessPass.logo?.sourceUrl,
       },
     });
   }
 
-  if (accessPasses.accessPasses[0]?.route !== company.route) {
+  if (
+    accessPasses.accessPasses[0]?.route !== company.route &&
+    accessPasses.accessPasses[0]?.route
+  ) {
     await prisma.company.update({
       where: {
         id: company.id,
       },
       data: {
-        route: accessPasses.accessPasses[0]?.route,
+        route: accessPasses.accessPasses[0]?.route || '',
       },
     });
   }

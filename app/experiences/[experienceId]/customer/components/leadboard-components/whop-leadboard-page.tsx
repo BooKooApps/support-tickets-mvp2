@@ -226,6 +226,7 @@ const WhopLeadboardPage = ({
 
               return (
                 <CompanyCard
+                  key={company.id}
                   company={company}
                   rank={rank}
                   getRankBadgeColor={getRankBadgeColor}
