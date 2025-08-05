@@ -59,6 +59,8 @@ export async function GET(request: NextRequest) {
         return {
           id: company.id,
           title: company.title,
+          logoUrl: company.logoUrl,
+          route: company.route,
           avgRating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
           totalReviews,
           avgResponseTime: Math.round(avgResponseTime), // Round to nearest second

@@ -82,6 +82,34 @@ export default async function HomePage({
     });
   }
 
+  const accessPasses = await whopSdk.experiences.listAccessPassesForExperience({
+    experienceId,
+  });
+
+  console.log(accessPasses);
+
+  if (accessPasses.accessPasses[0]?.logo !== company.logoUrl) {
+    await prisma.company.update({
+      where: {
+        id: company.id,
+      },
+      data: {
+        logoUrl: accessPasses.accessPasses[0]?.logo?.sourceUrl,
+      },
+    });
+  }
+
+  if (accessPasses.accessPasses[0]?.route !== company.route) {
+    await prisma.company.update({
+      where: {
+        id: company.id,
+      },
+      data: {
+        route: accessPasses.accessPasses[0]?.route,
+      },
+    });
+  }
+
   const whop_user = await whopSdk.users.getUser({
     userId,
   });

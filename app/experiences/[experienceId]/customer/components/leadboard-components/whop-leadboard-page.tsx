@@ -16,10 +16,13 @@ import {
   Loader2,
 } from 'lucide-react';
 import React, { useEffect, useState, useCallback } from 'react';
+import CompanyCard from './company-card';
 
-interface Company {
+export interface Company {
   id: string;
   title: string;
+  logoUrl: string;
+  route: string;
   avgRating: number;
   avgResponseTime: number;
   totalReviews: number;
@@ -222,93 +225,12 @@ const WhopLeadboardPage = ({
               };
 
               return (
-                <Card key={company.id} className=''>
-                  <CardHeader className='pb-3'>
-                    <div className='flex items-center justify-between'>
-                      <div className='flex items-center gap-3'>
-                        <Badge className={`px-2 py-1 ${getRankBadgeColor()}`}>
-                          <div className='flex items-center gap-1'>
-                            {getRankIcon()}
-                            <span className='font-semibold'>#{rank}</span>
-                          </div>
-                        </Badge>
-                        <CardTitle className='text-lg'>
-                          {company.title}
-                        </CardTitle>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className='pt-0'>
-                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                      {/* Rating */}
-                      <div className='flex items-center gap-2 p-3 rounded-lg border'>
-                        <Star className='h-4 w-4 text-primary fill-primary' />
-                        <div className='flex flex-col'>
-                          <span className='text-sm text-muted-foreground'>
-                            Rating
-                          </span>
-                          <div className='flex items-center gap-1'>
-                            <span className='font-semibold text-lg'>
-                              {company.avgRating > 0
-                                ? company.avgRating.toFixed(1)
-                                : 'N/A'}
-                            </span>
-                            {company.avgRating > 0 && (
-                              <div className='flex items-center'>
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`h-3 w-3 ${
-                                      i < Math.floor(company.avgRating)
-                                        ? 'text-primary fill-primary'
-                                        : i < company.avgRating
-                                          ? 'text-primary fill-primary opacity-50'
-                                          : 'text-gray-300'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Response Time */}
-                      <div className='flex items-center gap-2 p-3 rounded-lg border'>
-                        <Clock className='h-4 w-4 text-green-600' />
-                        <div className='flex flex-col'>
-                          <span className='text-sm text-muted-foreground'>
-                            Avg Response
-                          </span>
-                          <span className='font-semibold text-lg'>
-                            {company.avgResponseTime > 0 ? (
-                              company.avgResponseTime >= 3600 ? (
-                                `${(company.avgResponseTime / 3600).toFixed(1)}h`
-                              ) : company.avgResponseTime >= 60 ? (
-                                `${Math.round(company.avgResponseTime / 60)}m`
-                              ) : (
-                                `${company.avgResponseTime}s`
-                              )
-                            ) : 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Total Reviews */}
-                      <div className='flex items-center gap-2 p-3 rounded-lg border'>
-                        <MessageSquare className='h-4 w-4 text-purple-600' />
-                        <div className='flex flex-col'>
-                          <span className='text-sm text-muted-foreground'>
-                            Total Reviews
-                          </span>
-                          <span className='font-semibold text-lg'>
-                            {company.totalReviews.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <CompanyCard
+                  company={company}
+                  rank={rank}
+                  getRankBadgeColor={getRankBadgeColor}
+                  getRankIcon={getRankIcon}
+                />
               );
             })
           )}
